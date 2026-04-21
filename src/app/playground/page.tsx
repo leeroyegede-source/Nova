@@ -88,13 +88,23 @@ export default function Playground() {
     if (!files) return;
     Array.from(files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedFiles(prev => [...prev, {
-          name: file.name,
-          content: event.target?.result as string
-        }]);
-      };
-      reader.readAsText(file);
+      if (file.type.startsWith('image/')) {
+        reader.onload = (event) => {
+          setUploadedFiles(prev => [...prev, {
+            name: file.name,
+            content: `[ATTACHED_IMAGE: ${event.target?.result}]`
+          }]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        reader.onload = (event) => {
+          setUploadedFiles(prev => [...prev, {
+            name: file.name,
+            content: event.target?.result as string
+          }]);
+        };
+        reader.readAsText(file);
+      }
     });
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -123,6 +133,7 @@ export default function Playground() {
     const projects = [...savedProjects, newProject];
     setSavedProjects(projects);
     localStorage.setItem('nova_projects', JSON.stringify(projects));
+    window.alert("Project saved successfully!");
   };
 
   const loadProject = (project: any) => {

@@ -39,6 +39,7 @@ CRITICAL CONSTRAINT 1: You MUST explicitly include \`import React, { useState, u
 CRITICAL CONSTRAINT 2: To use database, auth, storage, pdf generation, workflow engine, or email automations, you MUST import the internal SDK: \`import { nova } from './NovaBackend';\`. Do NOT fetch external APIs for these. Use \`nova.db.insert('table', data)\`, etc. Attach these to your buttons and forms!
 CRITICAL CONSTRAINT 3: You have a strict output token limit. Prioritize writing clean, concise components. Do NOT write overly long code blobs, dummy data arrays, or repeating UI sections that exceed 350 lines, or your code will get cut off! Use array maps where possible.
 CRITICAL CONSTRAINT 4: The generated layout MUST be fully mobile responsive out of the box. Use Tailwind's 'md:', 'sm:', and 'lg:' classes extensively. Stack Sidebars, adjust flex directions, and scale padding down for mobile views seamlessly.
+CRITICAL CONSTRAINT 5: If the user requests a change/prompt and there is ALREADY an active project context (the currentCode block is not empty), you MUST explicitly ask them if this prompt is meant to CONTINUE modifying the ongoing project or if you should start a new build from scratch. DO NOT rewrite everything from scratch without asking, unless explicitly instructed.
 
 ${currentCode ? `THE USER ALREADY HAS A GENERATED APP. THEY ARE REQUESTING AN EDIT.
 CURRENT APP CODE:
@@ -68,10 +69,26 @@ Modify this code to satisfy their new requests. Ensure you map everything proper
               "claude-3-5-sonnet-20241022"
             ];
 
-            const anthropicMessages = conversationHistory.map((m: any) => ({
-              role: m.role === 'agent' ? 'assistant' : m.role,
-              content: m.content
-            }));
+            const anthropicMessages = conversationHistory.map((m: any) => {
+              const r = m.role === 'agent' ? 'assistant' : m.role;
+              if (m.role === 'user' && m.content.includes('[ATTACHED_IMAGE:')) {
+                const imageRegex = /\[ATTACHED_IMAGE:\s*(data:image\/([^;]+);base64,([a-zA-Z0-9+/=]+))\]/g;
+                const textContent = m.content.replace(imageRegex, '').trim();
+                const blocks = [];
+                
+                const matches = [...m.content.matchAll(imageRegex)];
+                for (const match of matches) {
+                  blocks.push({
+                    type: "image",
+                    source: { type: "base64", media_type: `image/${match[2]}`, data: match[3] }
+                  });
+                }
+                if (textContent) blocks.push({ type: "text", text: textContent });
+                
+                return { role: r, content: blocks };
+              }
+              return { role: r, content: m.content };
+            });
 
             for (const modelString of modelsToTry) {
               try {
