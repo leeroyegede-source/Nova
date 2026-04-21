@@ -175,7 +175,11 @@ export default function Playground() {
     
     let compiledMessage = userPrompt;
     if (uploadedFiles.length > 0) {
-      compiledMessage += `\n\n[CONTEXT FILES PROVIDED BY USER]:\n` + uploadedFiles.map(f => `--- FILE: ${f.name} ---\n${f.content}\n--- END OF FILE ${f.name} ---`).join('\n\n');
+      compiledMessage += `\n\n[CONTEXT FILES PROVIDED BY USER IN THIS MESSAGE]:\n` + uploadedFiles.map(f => `--- FILE: ${f.name} ---\n${f.content}\n--- END OF FILE ${f.name} ---`).join('\n\n');
+    }
+    
+    if (projectAssets.length > 0) {
+      compiledMessage += `\n\n[SYSTEM NOTIFICATION]: The user has the following images uploaded into the local Project Assets Vault: ${projectAssets.map(a => a.name).join(', ')}. If the user asks you to use them, you MUST import them via \`import { ASSETS } from './NovaAssets';\` and use exactly like \`<img src={ASSETS['filename.ext']} />\`!`;
     }
 
     const displayPrompt = userPrompt || "[Uploaded Files Provided]";
