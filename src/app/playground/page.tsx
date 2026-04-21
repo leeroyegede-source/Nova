@@ -28,6 +28,8 @@ export default function Playground() {
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [searchTemplate, setSearchTemplate] = useState("");
   const [showProjectsModal, setShowProjectsModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveProjectName, setSaveProjectName] = useState("");
   const [savedProjects, setSavedProjects] = useState<{id: string, name: string, code: string, messages: any[], timestamp: number}[]>([]);
 
   const [generatedCode, setGeneratedCode] = useState("");
@@ -113,18 +115,21 @@ export default function Playground() {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSaveProject = () => {
+  const handleSaveProjectClick = () => {
     if (!generatedCode && messages.length <= 1) {
        alert("No workspace progress to save!");
        return;
     }
-    const defaultName = `Workspace - ${new Date().toLocaleDateString()}`;
-    const name = window.prompt("Enter a name for this workspace:", defaultName);
-    if (!name) return;
+    setSaveProjectName(`Workspace - ${new Date().toLocaleDateString()}`);
+    setShowSaveModal(true);
+  };
+
+  const confirmSaveProject = () => {
+    if (!saveProjectName.trim()) return;
     
     const newProject = {
       id: Date.now().toString(),
-      name,
+      name: saveProjectName,
       code: generatedCode,
       messages: messages,
       timestamp: Date.now()
@@ -133,7 +138,12 @@ export default function Playground() {
     const projects = [...savedProjects, newProject];
     setSavedProjects(projects);
     localStorage.setItem('nova_projects', JSON.stringify(projects));
-    window.alert("Project saved successfully!");
+    setShowSaveModal(false);
+    
+    // Add brief timeout to allow modal to close before alert blocks the thread
+    setTimeout(() => {
+      window.alert("Project saved successfully!");
+    }, 100);
   };
 
   const loadProject = (project: any) => {
@@ -312,7 +322,7 @@ export default function Playground() {
               <div className="flex items-center gap-2"><FolderOpen className="w-4 h-4" /> Load</div>
             </button>
             <button 
-              onClick={handleSaveProject}
+              onClick={handleSaveProjectClick}
               className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-purple-600 hover:bg-purple-500 text-white shadow shadow-purple-500/20`}
             >
               <div className="flex items-center gap-2"><Save className="w-4 h-4" /> Save</div>
@@ -671,6 +681,41 @@ export const nova = {
 
         </div>
       </div>
+
+      {/* Save Modal */}
+      <AnimatePresence>
+        {showSaveModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090b] border border-white/10 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl flex flex-col pt-2"
+            >
+              <div className="p-4 flex items-center justify-between">
+                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Save className="w-5 h-5 text-purple-400" /> Save Workspace</h3>
+              </div>
+              <div className="p-4 pb-6 space-y-4">
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2 block">Workspace Name</label>
+                  <input 
+                    type="text" 
+                    value={saveProjectName}
+                    onChange={(e) => setSaveProjectName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-purple-500/50 text-white"
+                    placeholder="Enter a descriptive name..."
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowSaveModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-semibold">Cancel</button>
+                  <button onClick={confirmSaveProject} className="flex-1 px-4 py-2.5 rounded-xl bg-purple-600 text-white hover:bg-purple-500 transition-colors font-semibold shadow-lg shadow-purple-500/20">Save Project</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Projects Modal */}
       <AnimatePresence>
