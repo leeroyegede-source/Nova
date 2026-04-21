@@ -15,20 +15,23 @@ export default function Signup() {
   const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
     
-    // We can save names into user metadata
+    // We save names and default is_active to false into user metadata
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           first_name: firstName,
-          last_name: lastName
+          last_name: lastName,
+          is_active: false // Requires Admin Activation
         }
       }
     });
@@ -37,9 +40,16 @@ export default function Signup() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Success
-      localStorage.setItem("nova_auth_token", "authenticated");
-      router.push("/dashboard");
+      // Success - force sign out so they can't bypass via auth session token
+      await supabase.auth.signOut();
+      setSuccessMsg("Account created! Waiting for Admin approval to login.");
+      setLoading(false);
+      
+      // Clear fields
+      setEmail("");
+      setPassword("");
+      setFirstName("");
+      setLastName("");
     }
   };
 
@@ -70,6 +80,11 @@ export default function Signup() {
             {error && (
               <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-200 text-sm">
                 {error}
+              </div>
+            )}
+            {successMsg && (
+              <div className="p-3 bg-emerald-900/30 border border-emerald-500/50 rounded-xl text-emerald-200 text-sm font-medium">
+                {successMsg}
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">

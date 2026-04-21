@@ -36,6 +36,14 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else {
+      // Check if Admin approved them
+      if (data.user && data.user.user_metadata?.is_active !== true && email !== "admin@nova.ai") {
+        await supabase.auth.signOut();
+        setError("Your account is pending admin approval. Please wait for activation.");
+        setLoading(false);
+        return;
+      }
+      
       // Success
       localStorage.setItem("nova_auth_token", "authenticated");
       router.push("/dashboard");
