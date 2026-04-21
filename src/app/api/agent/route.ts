@@ -38,6 +38,7 @@ FORMAT REQUIREMENTS FOR CODE GENERATION (WHEN APPROVED):
 CRITICAL CONSTRAINT 1: You MUST explicitly include \`import React, { useState, useEffect } from 'react';\` at the very top of your snippet.
 CRITICAL CONSTRAINT 2: To use database, auth, storage, pdf generation, workflow engine, or email automations, you MUST import the internal SDK: \`import { nova } from './NovaBackend';\`. Do NOT fetch external APIs for these. Use \`nova.db.insert('table', data)\`, etc. Attach these to your buttons and forms!
 CRITICAL CONSTRAINT 3: You have a strict output token limit. Prioritize writing clean, concise components. Do NOT write overly long code blobs, dummy data arrays, or repeating UI sections that exceed 350 lines, or your code will get cut off! Use array maps where possible.
+CRITICAL CONSTRAINT 4: The generated layout MUST be fully mobile responsive out of the box. Use Tailwind's 'md:', 'sm:', and 'lg:' classes extensively. Stack Sidebars, adjust flex directions, and scale padding down for mobile views seamlessly.
 
 ${currentCode ? `THE USER ALREADY HAS A GENERATED APP. THEY ARE REQUESTING AN EDIT.
 CURRENT APP CODE:
