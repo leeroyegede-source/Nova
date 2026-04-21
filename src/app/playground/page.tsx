@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
-  Loader2, CheckCircle2, ChevronRight, Download, Zap
+  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,8 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default function Playground() {
   const [prompt, setPrompt] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<{name: string, content: string}[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<{role: 'user'|'agent', content: string}[]>([
     { role: 'agent', content: 'Initialize Nova OS. Waiting for instructions. You can select a template or describe your app manually.' }
   ]);
@@ -71,21 +73,50 @@ export default function Playground() {
 
   useEffect(() => { scrollToBottom() }, [messages, isBuilding]);
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUploadedFiles(prev => [...prev, {
+          name: file.name,
+          content: event.target?.result as string
+        }]);
+      };
+      reader.readAsText(file);
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handlePromptSubmit = async () => {
-    if (!prompt.trim() || isBuilding) return;
+    const userPrompt = prompt.trim();
+    if ((!userPrompt && uploadedFiles.length === 0) || isBuilding) return;
     
-    const userMessage = prompt;
+    let compiledMessage = userPrompt;
+    if (uploadedFiles.length > 0) {
+      compiledMessage += `\n\n[CONTEXT FILES PROVIDED BY USER]:\n` + uploadedFiles.map(f => `--- FILE: ${f.name} ---\n${f.content}\n--- END OF FILE ${f.name} ---`).join('\n\n');
+    }
+
+    const displayPrompt = userPrompt || "[Uploaded Files Provided]";
     setPrompt("");
-    const newMessages = [...messages, { role: 'user', content: userMessage }];
-    setMessages(newMessages as any);
+    setUploadedFiles([]);
+    
+    const uiMessages = [...messages, { role: 'user', content: displayPrompt }];
+    setMessages(uiMessages as any);
     setIsBuilding(true);
     setShowPreview(false);
 
     try {
+      const apiMessages = [...messages, { role: 'user', content: compiledMessage }];
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, currentCode: generatedCode || null })
+        body: JSON.stringify({ messages: apiMessages, currentCode: generatedCode || null })
       });
       
       if (!response.ok) {
@@ -267,26 +298,48 @@ export default function Playground() {
 
           {/* Prompt Entry Area */}
           <div className="p-4 bg-black/40 border-t border-white/10">
-            <div className="relative">
-              <textarea 
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handlePromptSubmit();
-                  }
-                }}
-                placeholder="Describe the app you want to build..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 outline-none focus:border-blue-500/50 text-sm text-white resize-none h-20"
-              />
+            {uploadedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {uploadedFiles.map((file, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-blue-900/30 text-blue-200 text-xs px-2 py-1.5 rounded-lg border border-blue-500/30">
+                    <Paperclip className="w-3 h-3" />
+                    <span className="truncate max-w-[120px]">{file.name}</span>
+                    <button onClick={() => removeFile(i)} className="hover:text-white"><X className="w-3 h-3" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-end gap-2 relative">
+              <input type="file" multiple className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
               <button 
-                onClick={handlePromptSubmit}
-                disabled={!prompt.trim() || isBuilding}
-                className="absolute right-3 bottom-3 p-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-3 mb-1 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                title="Upload context file (txt, json, tsx, md...)"
               >
-                <Send className="w-4 h-4" />
+                <Paperclip className="w-5 h-5" />
               </button>
+              
+              <div className="relative flex-1">
+                <textarea 
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handlePromptSubmit();
+                    }
+                  }}
+                  placeholder="Describe the app you want to build..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 outline-none focus:border-blue-500/50 text-sm text-white resize-none h-20"
+                />
+                <button 
+                  onClick={handlePromptSubmit}
+                  disabled={(!prompt.trim() && uploadedFiles.length === 0) || isBuilding}
+                  className="absolute right-3 bottom-3 p-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             
             <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
