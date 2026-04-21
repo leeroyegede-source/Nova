@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
-  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X
+  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +27,8 @@ export default function Playground() {
   const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database'>('preview');
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [searchTemplate, setSearchTemplate] = useState("");
+  const [showProjectsModal, setShowProjectsModal] = useState(false);
+  const [savedProjects, setSavedProjects] = useState<{id: string, name: string, code: string, messages: any[], timestamp: number}[]>([]);
 
   const [generatedCode, setGeneratedCode] = useState("");
   const [generatedSchema, setGeneratedSchema] = useState("");
@@ -57,6 +59,14 @@ export default function Playground() {
       if (saved) {
         setGeneratedCode(saved);
         setShowPreview(true);
+      }
+    }
+    
+    // Load historical workspaces list
+    if (typeof window !== 'undefined') {
+      const projects = localStorage.getItem('nova_projects');
+      if (projects) {
+        try { setSavedProjects(JSON.parse(projects)); } catch(e) {}
       }
     }
   }, []);
@@ -91,6 +101,42 @@ export default function Playground() {
 
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveProject = () => {
+    if (!generatedCode && messages.length <= 1) {
+       alert("No workspace progress to save!");
+       return;
+    }
+    const defaultName = `Workspace - ${new Date().toLocaleDateString()}`;
+    const name = window.prompt("Enter a name for this workspace:", defaultName);
+    if (!name) return;
+    
+    const newProject = {
+      id: Date.now().toString(),
+      name,
+      code: generatedCode,
+      messages: messages,
+      timestamp: Date.now()
+    };
+    
+    const projects = [...savedProjects, newProject];
+    setSavedProjects(projects);
+    localStorage.setItem('nova_projects', JSON.stringify(projects));
+  };
+
+  const loadProject = (project: any) => {
+    setGeneratedCode(project.code);
+    setMessages(project.messages);
+    setShowPreview(true);
+    setShowProjectsModal(false);
+    localStorage.setItem('nova_saved_project', project.code);
+  };
+
+  const deleteProject = (id: string) => {
+    const updated = savedProjects.filter(p => p.id !== id);
+    setSavedProjects(updated);
+    localStorage.setItem('nova_projects', JSON.stringify(updated));
   };
 
   const handlePromptSubmit = async () => {
@@ -247,6 +293,18 @@ export default function Playground() {
               className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-500 text-white shadow shadow-blue-500/20`}
             >
               <div className="flex items-center gap-2"><Download className="w-4 h-4" /> Export Code</div>
+            </button>
+            <button 
+              onClick={() => setShowProjectsModal(true)}
+              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10 hover:bg-white/10 text-white shadow`}
+            >
+              <div className="flex items-center gap-2"><FolderOpen className="w-4 h-4" /> Load</div>
+            </button>
+            <button 
+              onClick={handleSaveProject}
+              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-purple-600 hover:bg-purple-500 text-white shadow shadow-purple-500/20`}
+            >
+              <div className="flex items-center gap-2"><Save className="w-4 h-4" /> Save</div>
             </button>
           </div>
           
@@ -602,6 +660,48 @@ export const nova = {
 
         </div>
       </div>
+
+      {/* Projects Modal */}
+      <AnimatePresence>
+        {showProjectsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090b] border border-white/10 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]"
+            >
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 className="font-bold text-white text-lg flex items-center gap-2"><FolderOpen className="w-5 h-5 text-blue-400" /> Saved Workspaces</h3>
+                <button onClick={() => setShowProjectsModal(false)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-3">
+                {savedProjects.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No saved workspaces found.</p>
+                ) : (
+                  savedProjects.map(p => (
+                    <div key={p.id} className="flex flex-col bg-white/5 border border-white/10 p-4 rounded-xl hover:border-blue-500/30 transition-colors group">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-bold text-blue-100">{p.name}</h4>
+                          <p className="text-xs text-gray-400">{new Date(p.timestamp).toLocaleString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => loadProject(p)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-colors rounded-lg text-xs font-semibold">Load</button>
+                          <button onClick={() => deleteProject(p.id)} className="p-1.5 text-red-400/50 hover:text-red-400 hover:bg-red-400/10 transition-colors rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 truncate">{p.messages[p.messages.length - 1]?.content.substring(0, 80) || p.name}...</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
