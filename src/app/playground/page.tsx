@@ -10,11 +10,29 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TEMPLATE_REGISTRY } from "@/lib/templates";
-import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor } from "@codesandbox/sandpack-react";
+import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mock AI simulation delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+function SandpackAutoHealer({ isBuilding, onHealTrigger }: { isBuilding: boolean, onHealTrigger: (msg: string) => void }) {
+  const { sandpack } = useSandpack();
+  
+  useEffect(() => {
+    if (!isBuilding && sandpack.error) {
+       const timer = setTimeout(() => {
+          if (sandpack.error) {
+             const sysMsg = `[SYSTEM ERROR INTERCEPT]: The code you just compiled crashed the Sandpack Runtime natively!\n\nError Message:\n${sandpack.error.message}\n\nPlease critically audit your latest milestone, locate the syntax/hook violation, and fix it immediately.`;
+             onHealTrigger(sysMsg);
+          }
+       }, 2000);
+       return () => clearTimeout(timer);
+    }
+  }, [sandpack.error, isBuilding]);
+
+  return null;
+}
 
 export default function Playground() {
   const [prompt, setPrompt] = useState("");
@@ -58,6 +76,31 @@ export default function Playground() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDeployVercel = async () => {
+    if (Object.keys(generatedFiles).length === 0) {
+      alert("No code generated yet to deploy.");
+      return;
+    }
+    const deployName = window.prompt("Enter a name for your deployment (lowercase, no spaces):", "nova-app-deploy");
+    if (!deployName) return;
+
+    setMessages(prev => [...prev, { role: 'agent', content: `[SYSTEM WORKFLOW]: Initiating secure edge deployment to Vercel REST infrastructure for project '${deployName}'...\n\nPackaging multi-file environment...` }]);
+    
+    try {
+      const res = await fetch('/api/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: generatedFiles, projectName: deployName })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Deployment failed");
+      
+      setMessages(prev => [...prev, { role: 'agent', content: `🔥 **Edge Deployment Successful!**\n\nThe Vercel cluster has successfully built your unified architecture.\n\n🔗 **Live URL:** [${data.url}](https://${data.url})` }]);
+    } catch(e: any) {
+      setMessages(prev => [...prev, { role: 'agent', content: `⚠️ **Deployment Terminated:** ${e.message}` }]);
+    }
   };
 
   useEffect(() => {
@@ -178,8 +221,8 @@ export default function Playground() {
     localStorage.setItem('nova_projects', JSON.stringify(updated));
   };
 
-  const handlePromptSubmit = async () => {
-    const userPrompt = prompt.trim();
+  const handlePromptSubmit = async (overrideMessage?: string | React.MouseEvent) => {
+    const userPrompt = typeof overrideMessage === 'string' ? overrideMessage : prompt.trim();
     if ((!userPrompt && uploadedFiles.length === 0) || isBuilding) return;
     
     let compiledMessage = userPrompt;
@@ -382,6 +425,12 @@ export default function Playground() {
               className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-purple-600 hover:bg-purple-500 text-white shadow shadow-purple-500/20`}
             >
               <div className="flex items-center gap-2"><Save className="w-4 h-4" /> Save</div>
+            </button>
+            <button 
+              onClick={handleDeployVercel}
+              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-white hover:bg-gray-200 text-black shadow shadow-white/20`}
+            >
+              <div className="flex items-center gap-2 font-bold tracking-tight">▲ Deploy to Vercel</div>
             </button>
           </div>
           
@@ -731,6 +780,7 @@ export const nova = {
                       }}
                     >
                       <SandpackLayout className="h-full w-full !rounded-none !border-none">
+                        <SandpackAutoHealer isBuilding={isBuilding} onHealTrigger={(msg) => handlePromptSubmit(msg)} />
                         {sandboxView === 'code' ? (
                           <SandpackCodeEditor className="h-full w-full" showLineNumbers={true} showTabs={true} />
                         ) : (
