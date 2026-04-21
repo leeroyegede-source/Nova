@@ -46,7 +46,8 @@ export default function Signup() {
         email: email,
         first_name: firstName,
         last_name: lastName,
-        is_active: false
+        is_active: false,
+        is_admin: false
       });
       
       // Success - force sign out so they can't bypass via auth session token
