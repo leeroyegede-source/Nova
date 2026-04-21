@@ -19,13 +19,6 @@ export default function Login() {
     setLoading(true);
     setError(null);
     
-    // Check if the login is an admin bypass
-    if (email === "leeroyegede@gmail.com") {
-      localStorage.setItem("nova_auth_token", "admin_authenticated");
-      router.push("/admin");
-      return;
-    } 
-    
     // Attempt Supabase SignIn
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -36,7 +29,7 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Check if Admin approved them
+      // Check if Admin approved them (Master admin email bypasses this block)
       if (data.user && data.user.user_metadata?.is_active !== true && email !== "leeroyegede@gmail.com") {
         await supabase.auth.signOut();
         setError("Your account is pending admin approval. Please wait for activation.");
@@ -45,8 +38,13 @@ export default function Login() {
       }
       
       // Success
-      localStorage.setItem("nova_auth_token", "authenticated");
-      router.push("/dashboard");
+      if (email === "leeroyegede@gmail.com") {
+        localStorage.setItem("nova_auth_token", "admin_authenticated");
+        router.push("/playground"); // Masters go straight to the builder!
+      } else {
+        localStorage.setItem("nova_auth_token", "authenticated");
+        router.push("/dashboard");
+      }
     }
   };
 
