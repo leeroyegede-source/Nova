@@ -447,7 +447,6 @@ export const nova = {
                       options={{ 
                         showNavigator: true, 
                         showTabs: false,
-                        showOpenInCodeSandbox: false, // Prevents external tab redirects
                         editorHeight: "100%",
                         classes: {
                           "sp-wrapper": "h-full w-full",
