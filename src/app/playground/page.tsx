@@ -512,17 +512,30 @@ export default function Playground() {
           {activeTab === 'preview' && showPreview && (
             <div className={`flex-1 flex flex-col relative ${deviceView === 'mobile' ? 'p-8 items-center justify-center bg-[url("https://transparenttextures.com/patterns/cubes.png")] bg-opacity-20' : 'p-0 bg-[#09090b]'}`}>
               
-              <div className="absolute top-4 right-4 flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 z-20 shadow-xl">
-                <button 
-                  onClick={() => setDeviceView('desktop')}
-                  className={`p-1.5 rounded ${deviceView === 'desktop' ? 'bg-white/20 text-white' : 'text-gray-400'}`}
-                  title="Desktop View"
-                ><Monitor className="w-4 h-4" /></button>
-                <button 
-                  onClick={() => setDeviceView('mobile')}
-                  className={`p-1.5 rounded ${deviceView === 'mobile' ? 'bg-white/20 text-white' : 'text-gray-400'}`}
-                  title="Mobile View"
-                ><Smartphone className="w-4 h-4" /></button>
+              <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+                <div className="flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-xl">
+                  <button 
+                    onClick={() => setSandboxView('preview')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${sandboxView === 'preview' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >Preview</button>
+                  <button 
+                    onClick={() => setSandboxView('code')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${sandboxView === 'code' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >Code</button>
+                </div>
+                
+                <div className="flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-xl">
+                  <button 
+                    onClick={() => setDeviceView('desktop')}
+                    className={`p-1.5 rounded ${deviceView === 'desktop' ? 'bg-white/20 text-white' : 'text-gray-400'}`}
+                    title="Desktop View"
+                  ><Monitor className="w-4 h-4" /></button>
+                  <button 
+                    onClick={() => setDeviceView('mobile')}
+                    className={`p-1.5 rounded ${deviceView === 'mobile' ? 'bg-white/20 text-white' : 'text-gray-400'}`}
+                    title="Mobile View"
+                  ><Smartphone className="w-4 h-4" /></button>
+                </div>
               </div>
 
               <motion.div 
@@ -533,7 +546,20 @@ export default function Playground() {
                 }`}
               >
                 {/* Live Sandpack execution of real react strings mapped directly without static DOM */}
-                <div className="h-full w-full flex-1 relative">
+                <div className="h-full w-full flex-1 relative sandpack-fullscreen flex flex-col">
+                  <style dangerouslySetInnerHTML={{__html: `
+                    .sandpack-fullscreen .sp-wrapper,
+                    .sandpack-fullscreen .sp-layout,
+                    .sandpack-fullscreen .sp-stack,
+                    .sandpack-fullscreen .sp-preview-container,
+                    .sandpack-fullscreen .sp-preview-iframe,
+                    .sandpack-fullscreen .sp-editor {
+                      height: 100% !important;
+                      min-height: 100% !important;
+                      width: 100% !important;
+                      flex: 1;
+                    }
+                  `}} />
                   <ErrorBoundary>
                     <SandpackProvider 
                       theme="dark" 
