@@ -23,7 +23,7 @@ function SandpackAutoHealer({ isBuilding, onHealTrigger }: { isBuilding: boolean
     if (!isBuilding && sandpack.error) {
        const timer = setTimeout(() => {
           if (sandpack.error) {
-             const sysMsg = `[SYSTEM ERROR INTERCEPT]: The code you just compiled crashed the Sandpack Runtime natively!\n\nError Message:\n${sandpack.error.message}\n\nPlease critically audit your latest milestone, locate the syntax/hook violation, and fix it immediately.`;
+             const sysMsg = `[Automated Diagnostics]: The React compiler encountered a fatal exception during the build lifecycle.\n\nError Trace:\n${sandpack.error.message}\n\nAgent Instruction: Conduct a structured code review of the previous output. Isolate the regression (e.g. unclosed JSX tags, undeclared variables, React hook violations) and strictly emit the corrected modules. Maintain production architectural standards.`;
              onHealTrigger(sysMsg);
           }
        }, 2000);
@@ -49,7 +49,9 @@ export default function Playground() {
   const [searchTemplate, setSearchTemplate] = useState("");
   const [showProjectsModal, setShowProjectsModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showDeployModal, setShowDeployModal] = useState(false);
   const [saveProjectName, setSaveProjectName] = useState("");
+  const [deployProjectName, setDeployProjectName] = useState("");
   const [savedProjects, setSavedProjects] = useState<{id: string, name: string, code: string, messages: any[], timestamp: number}[]>([]);
 
   const [generatedFiles, setGeneratedFiles] = useState<Record<string, string>>({});
@@ -78,21 +80,37 @@ export default function Playground() {
     URL.revokeObjectURL(url);
   };
 
-  const handleDeployVercel = async () => {
+  const handleDeployVercel = async (e?: React.MouseEvent) => {
     if (Object.keys(generatedFiles).length === 0) {
       setMessages(prev => [...prev, { role: 'agent', content: "⚠️ **Deployment Error:** No active code architecture was found in the IDE workspace. Please generate or load an application first before deploying!"}]);
       return;
     }
-    const deployName = window.prompt("Enter a name for your deployment (lowercase, no spaces):", "nova-app-deploy");
-    if (!deployName) return;
+    setDeployProjectName(`nova-app-${Date.now().toString().slice(-4)}`);
+    setShowDeployModal(true);
+  };
 
-    setMessages(prev => [...prev, { role: 'agent', content: `[SYSTEM WORKFLOW]: Initiating secure edge deployment to Vercel REST infrastructure for project '${deployName}'...\n\nPackaging multi-file environment...` }]);
+  const confirmDeployVercel = async () => {
+    setShowDeployModal(false);
+    if (!deployProjectName.trim()) return;
+
+    // Auto-save verification sequence before edge deployment integration
+    const currentCodeStr = JSON.stringify(generatedFiles);
+    const isSavedAlready = savedProjects.some(p => p.code === currentCodeStr);
+    if (!isSavedAlready) {
+        const autoSaveName = deployProjectName + " (Auto-Saved pre-deploy)";
+        const projects = [...savedProjects, { id: Date.now().toString(), name: autoSaveName, code: currentCodeStr, messages, timestamp: Date.now() }];
+        setSavedProjects(projects);
+        localStorage.setItem('nova_projects', JSON.stringify(projects));
+        setMessages(prev => [...prev, { role: 'agent', content: `[SYSTEM NOTIFICATION]: Current workspace modifications automatically saved under '${autoSaveName}'.`}]);
+    }
+
+    setMessages(prev => [...prev, { role: 'agent', content: `[SYSTEM WORKFLOW]: Initiating secure edge deployment to Vercel REST infrastructure for project '${deployProjectName}'...\n\nPackaging multi-file environment...` }]);
     
     try {
       const res = await fetch('/api/deploy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: generatedFiles, projectName: deployName })
+        body: JSON.stringify({ files: generatedFiles, projectName: deployProjectName })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Deployment failed");
@@ -855,6 +873,42 @@ export const nova = {
 
         </div>
       </div>
+
+      {/* Deploy to Vercel Modal */}
+      <AnimatePresence>
+        {showDeployModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090b] border border-white/10 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl flex flex-col pt-2"
+            >
+              <div className="p-4 flex items-center justify-between">
+                <h3 className="font-bold text-white text-lg flex items-center gap-2">▲ Launch to Vercel</h3>
+              </div>
+              <div className="p-4 pb-6 space-y-4">
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2 block">Vercel Project Name</label>
+                  <input 
+                    type="text" 
+                    value={deployProjectName}
+                    onChange={(e) => setDeployProjectName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-white/50 text-white"
+                    placeholder="e.g. nova-portfolio-123"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Deployments are pushed directly to Edge endpoints. Unsaved projects will be dynamically auto-saved prior to deployment.</p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowDeployModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-semibold">Cancel</button>
+                  <button onClick={confirmDeployVercel} className="flex-1 px-4 py-2.5 rounded-xl bg-white text-black hover:bg-gray-200 transition-colors font-semibold shadow-lg shadow-white/20">Confirm Deploy</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Save Modal */}
       <AnimatePresence>
