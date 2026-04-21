@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
-  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2
+  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,9 +24,10 @@ export default function Playground() {
     { role: 'agent', content: 'Initialize Nova OS. Waiting for instructions. You can select a template or describe your app manually.' }
   ]);
   const [isBuilding, setIsBuilding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database' | 'assets'>('preview');
   const [sandboxView, setSandboxView] = useState<'preview' | 'code'>('preview');
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
+  const [projectAssets, setProjectAssets] = useState<{name: string, dataUrl: string}[]>([]);
   const [searchTemplate, setSearchTemplate] = useState("");
   const [showProjectsModal, setShowProjectsModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -93,9 +94,16 @@ export default function Playground() {
       const reader = new FileReader();
       if (file.type.startsWith('image/')) {
         reader.onload = (event) => {
+          const result = event.target?.result as string;
+          // Sent to conversational context
           setUploadedFiles(prev => [...prev, {
             name: file.name,
-            content: `[ATTACHED_IMAGE: ${event.target?.result}]`
+            content: `[ATTACHED_IMAGE: ${result}]`
+          }]);
+          // Stored permanently in Asset Vault for coding
+          setProjectAssets(prev => [...prev.filter(a => a.name !== file.name), {
+            name: file.name,
+            dataUrl: result
           }]);
         };
         reader.readAsDataURL(file);
@@ -309,6 +317,12 @@ export default function Playground() {
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'database' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               <div className="flex items-center gap-2"><Database className="w-4 h-4" /> Schema</div>
+            </button>
+            <button 
+              onClick={() => setActiveTab('assets')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'assets' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              <div className="flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Assets</div>
             </button>
             <button 
               onClick={handleDownload}
@@ -569,6 +583,9 @@ export default function Playground() {
                       }}
                       files={{
                         "/App.js": generatedCode,
+                        "/NovaAssets.js": `export const ASSETS = ${JSON.stringify(
+                          projectAssets.reduce((acc, a) => ({ ...acc, [a.name]: a.dataUrl }), {})
+                        )};`,
                         "/public/index.html": `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -694,6 +711,54 @@ export const nova = {
               <pre className="text-gray-300">
                 <code dangerouslySetInnerHTML={{ __html: generatedSchema || "-- Waiting for Schema generation..." }} />
               </pre>
+            </div>
+          )}
+
+          {activeTab === 'assets' && (
+            <div className="flex-1 p-8 overflow-y-auto font-sans bg-[#09090b]">
+              <div className="max-w-2xl mx-auto">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-white mb-2">Project Asset Library</h2>
+                  <p className="text-gray-400 text-sm">Upload images securely here. The Agent will compile them natively so you can request them in your apps without needing complex Blob states in your front-end code! (e.g. "Use logo.png as my header background")</p>
+                </div>
+                
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-white/20 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all p-12 rounded-2xl flex flex-col items-center justify-center cursor-pointer mb-8"
+                >
+                  <div className="bg-purple-600/20 p-4 rounded-full mb-4">
+                    <ImageIcon className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-1">Upload New Asset</h3>
+                  <p className="text-sm text-gray-500">Drag and drop or click to browse</p>
+                </div>
+
+                <div className="space-y-4">
+                  {projectAssets.length === 0 ? (
+                    <div className="text-center p-8 bg-white/5 rounded-xl border border-white/10 text-gray-500 text-sm">
+                      No assets uploaded yet
+                    </div>
+                  ) : (
+                    projectAssets.map((asset, i) => (
+                      <div key={i} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-black/50">
+                          <img src={asset.dataUrl} alt={asset.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium truncate">{asset.name}</p>
+                          <p className="text-xs text-gray-400 uppercase tracking-wider">Image / Uploaded</p>
+                        </div>
+                        <button 
+                          onClick={() => setProjectAssets(prev => prev.filter((_, idx) => idx !== i))}
+                          className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
