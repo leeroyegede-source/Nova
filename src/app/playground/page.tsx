@@ -269,7 +269,7 @@ export default function Playground() {
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex bg-white/5 border border-white/10 rounded-lg p-1">
+          <div className="flex overflow-x-auto md:overflow-visible max-w-[55vw] md:max-w-none bg-white/5 border border-white/10 rounded-lg p-1 space-x-1 hide-scrollbar">
             <button 
               onClick={() => setActiveTab('preview')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'preview' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
@@ -315,10 +315,10 @@ export default function Playground() {
       </header>
 
       {/* Main Workspace */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
         
         {/* Left Panel - Chat / Agent Output */}
-        <div className="w-full md:w-[400px] lg:w-[500px] border-r border-white/10 flex flex-col bg-black/20 shrink-0">
+        <div className="h-[45vh] md:h-auto w-full md:w-[400px] lg:w-[500px] border-b md:border-b-0 md:border-r border-white/10 flex flex-col bg-black/20 shrink-0">
           
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
