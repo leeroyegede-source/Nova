@@ -370,6 +370,11 @@ CREATE POLICY "Users view own docs" ON documents FOR SELECT USING (auth.uid() = 
                     <Sandpack 
                       theme="dark" 
                       template="react" 
+                      customSetup={{
+                        dependencies: {
+                          "@supabase/supabase-js": "^2.42.0"
+                        }
+                      }}
                       files={{
                         "/App.js": generatedCode,
                         "/public/index.html": `<!DOCTYPE html>
@@ -385,9 +390,15 @@ CREATE POLICY "Users view own docs" ON documents FOR SELECT USING (auth.uid() = 
 </body>
 </html>`,
                         "/NovaBackend.js": `
-// AUTO-GENERATED NOVA BACKEND SDK
-// This bridges the internal 12 automation tools seamlessly into Sandpack.
+import { createClient } from '@supabase/supabase-js';
 
+const SUPABASE_URL = "${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}";
+const SUPABASE_KEY = "${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}";
+
+const isLive = SUPABASE_URL && SUPABASE_KEY;
+export const supabase = isLive ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// AUTO-GENERATED NOVA BACKEND SDK (LIVE HYBRID MAPPING)
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
 const getStore = (key) => JSON.parse(localStorage.getItem(\`nova_\${key}\`) || '[]');
@@ -396,50 +407,74 @@ const setStore = (key, data) => localStorage.setItem(\`nova_\${key}\`, JSON.stri
 export const nova = {
   db: {
     insert: async (table, data) => { 
+      if (isLive) {
+        const { data: res, error } = await supabase.from(table).insert(data).select().single();
+        if (error) { console.error("DB Error:", error); return { success: false, error }; }
+        return { success: true, data: res };
+      }
       await delay(300);
       const store = getStore(table);
       const record = { id: Math.random().toString(36).substr(2, 9), ...data, created_at: new Date().toISOString() };
       setStore(table, [...store, record]);
-      console.log(\`[Nova DB] Inserted into \${table}:\`, record); 
       return { success: true, data: record }; 
     },
     select: async (table, query) => { 
+      if (isLive) {
+        const { data: res, error } = await supabase.from(table).select(query || '*');
+        return { data: res || [], error };
+      }
       await delay(200);
-      console.log(\`[Nova DB] Queried \${table}\`); 
       return { data: getStore(table) }; 
     },
     update: async (table, id, data) => { 
+      if (isLive) {
+        const { error } = await supabase.from(table).update(data).eq('id', id);
+        return { success: !error, error };
+      }
       await delay(300);
       const store = getStore(table);
-      const updated = store.map(row => row.id === id ? { ...row, ...data } : row);
-      setStore(table, updated);
-      console.log(\`[Nova DB] Updated \${table} [\${id}]\`); 
+      setStore(table, store.map(row => row.id === id ? { ...row, ...data } : row));
       return { success: true }; 
     },
     delete: async (table, id) => { 
+      if (isLive) {
+        const { error } = await supabase.from(table).delete().eq('id', id);
+        return { success: !error, error };
+      }
       await delay(300);
       setStore(table, getStore(table).filter(r => r.id !== id));
-      console.log(\`[Nova DB] Deleted \${table} [\${id}]\`); 
       return { success: true }; 
     }
   },
   auth: {
-    signUp: async (email, password) => { await delay(500); console.log(\`[Nova Auth] Signed up \${email}\`); return { user: { id: "u_123", email } }; },
-    signIn: async (email, password) => { await delay(500); console.log(\`[Nova Auth] Signed in \${email}\`); return { user: { id: "u_123", email } }; },
-    signOut: async () => { await delay(200); console.log('[Nova Auth] Signed out'); return true; }
+    signUp: async (email, password) => { 
+      if (isLive) return supabase.auth.signUp({ email, password });
+      await delay(500); return { data: { user: { id: "u_mock", email } } }; 
+    },
+    signIn: async (email, password) => { 
+      if (isLive) return supabase.auth.signInWithPassword({ email, password });
+      await delay(500); return { data: { user: { id: "u_mock", email } } }; 
+    },
+    signOut: async () => { 
+      if (isLive) return supabase.auth.signOut();
+      await delay(200); return { error: null }; 
+    }
   },
   storage: {
-    upload: async (bucket, file) => { await delay(800); console.log(\`[Nova Storage] Uploaded to \${bucket}:\`, file.name); return { url: \`https://nova-storage.com/\${file.name}\` }; }
+    upload: async (bucket, file) => { 
+      if (isLive) return supabase.storage.from(bucket).upload(file.name, file);
+      await delay(800); return { url: \`https://nova-storage.com/\${file.name}\` }; 
+    }
   },
   automation: {
     triggerEmail: async (to, subject, body) => { await delay(400); console.log(\`[Nova Automation] 📨 Email sent to \${to}: \${subject}\`); return true; },
     fireWebhook: async (url, payload) => { await delay(400); console.log(\`[Nova Automation] 🪝 Webhook fired to \${url}\`); return true; },
   },
   pdf: {
-    generate: async (elementId) => { await delay(600); console.log(\`[Nova PDF] 📄 PDF Generated from DOM ID \${elementId}\`); return "blob:pdf-url"; }
+    generate: async (elementId) => { await delay(600); return "blob:pdf-url"; }
   },
   workflow: {
-    executeStatusChange: async (recordId, newStatus) => { await delay(300); console.log(\`[Nova Workflow] ⚙️ Status for \${recordId} changed to \${newStatus}\`); return true; }
+    executeStatusChange: async (recordId, newStatus) => { await delay(300); return true; }
   }
 };
 `
@@ -451,7 +486,7 @@ export const nova = {
                         classes: {
                           "sp-wrapper": "h-full w-full",
                           "sp-layout": "h-full w-full",
-                          "sp-card": "h-[660px]" // Forces inner container to mimic browser height
+                          "sp-card": "h-[660px]"
                         }
                       }} 
                     />
