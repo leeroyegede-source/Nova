@@ -41,7 +41,7 @@ export default function Signup() {
       setLoading(false);
     } else if (data?.user) {
       // Duplicate profile into public users table for easy querying
-      await supabase.from('users').insert({
+      const { error: insertError } = await supabase.from('users').insert({
         id: data.user.id,
         email: email,
         first_name: firstName,
@@ -49,6 +49,12 @@ export default function Signup() {
         is_active: false,
         is_admin: false
       });
+      
+      if (insertError) {
+        setError(`DB Error: ${insertError.message}`);
+        setLoading(false);
+        return;
+      }
       
       // Success - force sign out so they can't bypass via auth session token
       await supabase.auth.signOut();
