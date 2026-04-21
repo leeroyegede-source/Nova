@@ -5,19 +5,38 @@ import { Sparkles, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
     
-    // Check if the login is an admin
+    // Check if the login is an admin bypass
     if (email === "admin@nova.ai") {
       localStorage.setItem("nova_auth_token", "admin_authenticated");
       router.push("/admin");
+      return;
+    } 
+    
+    // Attempt Supabase SignIn
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
     } else {
+      // Success
       localStorage.setItem("nova_auth_token", "authenticated");
       router.push("/dashboard");
     }
@@ -47,11 +66,17 @@ export default function Login() {
           </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-200 text-sm">
+                {error}
+              </div>
+            )}
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-300">Email Address</label>
               <input 
                 type="email" 
                 value={email}
+                required
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com" 
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none text-white transition-all placeholder:text-gray-600"
@@ -65,13 +90,19 @@ export default function Login() {
               </div>
               <input 
                 type="password" 
+                value={password}
+                required
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••" 
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none text-white transition-all placeholder:text-gray-600"
               />
             </div>
             
-            <button className="w-full py-3 mt-4 rounded-xl button-gradient font-medium text-white">
-              Sign In
+            <button 
+              disabled={loading}
+              className="w-full py-3 mt-4 rounded-xl button-gradient font-medium text-white disabled:opacity-50 transition-opacity"
+            >
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 

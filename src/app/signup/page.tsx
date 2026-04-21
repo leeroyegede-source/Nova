@@ -4,14 +4,43 @@ import Link from "next/link";
 import { Sparkles, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function Signup() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem("nova_auth_token", "authenticated");
-    router.push("/dashboard");
+    setLoading(true);
+    setError(null);
+    
+    // We can save names into user metadata
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName
+        }
+      }
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      // Success
+      localStorage.setItem("nova_auth_token", "authenticated");
+      router.push("/dashboard");
+    }
   };
 
   return (
@@ -38,11 +67,18 @@ export default function Signup() {
           </div>
 
           <form className="space-y-4" onSubmit={handleSignup}>
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-200 text-sm">
+                {error}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-300">First Name</label>
                 <input 
                   type="text" 
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Jane" 
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none text-white transition-all placeholder:text-gray-600"
                 />
@@ -51,6 +87,8 @@ export default function Signup() {
                 <label className="text-sm font-medium text-gray-300">Last Name</label>
                 <input 
                   type="text" 
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   placeholder="Doe" 
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none text-white transition-all placeholder:text-gray-600"
                 />
@@ -61,6 +99,9 @@ export default function Signup() {
               <label className="text-sm font-medium text-gray-300">Email Address</label>
               <input 
                 type="email" 
+                value={email}
+                required
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com" 
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none text-white transition-all placeholder:text-gray-600"
               />
@@ -70,14 +111,20 @@ export default function Signup() {
               <label className="text-sm font-medium text-gray-300">Password</label>
               <input 
                 type="password" 
+                value={password}
+                required
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••" 
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 outline-none text-white transition-all placeholder:text-gray-600"
               />
               <p className="text-xs text-gray-500 pt-1">Must be at least 8 characters</p>
             </div>
             
-            <button className="w-full py-3 mt-4 rounded-xl button-gradient font-medium text-white">
-              Create Account
+            <button 
+              disabled={loading}
+              className="w-full py-3 mt-4 rounded-xl button-gradient font-medium text-white disabled:opacity-50 transition-opacity"
+            >
+              {loading ? "Creating..." : "Create Account"}
             </button>
           </form>
 
