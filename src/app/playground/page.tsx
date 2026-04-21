@@ -80,7 +80,7 @@ export default function Playground() {
 
   const handleDeployVercel = async () => {
     if (Object.keys(generatedFiles).length === 0) {
-      alert("No code generated yet to deploy.");
+      setMessages(prev => [...prev, { role: 'agent', content: "⚠️ **Deployment Error:** No active code architecture was found in the IDE workspace. Please generate or load an application first before deploying!"}]);
       return;
     }
     const deployName = window.prompt("Enter a name for your deployment (lowercase, no spaces):", "nova-app-deploy");
