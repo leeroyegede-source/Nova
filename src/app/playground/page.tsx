@@ -551,9 +551,7 @@ export default function Playground() {
                     .sandpack-fullscreen .sp-wrapper,
                     .sandpack-fullscreen .sp-layout,
                     .sandpack-fullscreen .sp-stack,
-                    .sandpack-fullscreen .sp-preview-container,
-                    .sandpack-fullscreen .sp-preview-iframe,
-                    .sandpack-fullscreen .sp-editor {
+                    .sandpack-fullscreen .sp-preview-container {
                       height: 100% !important;
                       min-height: 100% !important;
                       width: 100% !important;
@@ -678,7 +676,7 @@ export const nova = {
                         {sandboxView === 'code' ? (
                           <SandpackCodeEditor className="h-full w-full" showLineNumbers={true} showTabs={false} />
                         ) : (
-                          <SandpackPreview className="h-full w-full" showNavigator={true} />
+                          <SandpackPreview className="h-full w-full" showNavigator={false} />
                         )}
                       </SandpackLayout>
                     </SandpackProvider>
