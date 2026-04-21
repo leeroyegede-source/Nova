@@ -16,11 +16,10 @@ export default function Dashboard() {
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    const auth = localStorage.getItem("nova_auth_token");
-    if (!auth) {
+    if (!localStorage.getItem("nova_auth_token")) {
       router.push("/login");
     } else {
-      setIsAuthenticated(true);
+      setTimeout(() => setIsAuthenticated(true), 0);
     }
   }, [router]);
 

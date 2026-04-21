@@ -76,62 +76,90 @@ export default function Playground() {
     
     const userMessage = prompt;
     setPrompt("");
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(newMessages as any);
     setIsBuilding(true);
     setShowPreview(false);
 
-    // AI Simulation Sequence
-    await sleep(800);
-    setMessages(prev => [...prev, { role: 'agent', content: 'Analyzing architecture requirements...' }]);
-    
-    await sleep(1000);
-    setMessages(prev => [...prev, { role: 'agent', content: 'Bootstrapping application (Next.js + TailwindCSS + Supabase)...' }]);
-    
-    await sleep(1500);
-    setGeneratedSchema(`
--- Auto-generated Supabase Schema for requested App
-CREATE TABLE users (
-  id UUID PRIMARY KEY REFERENCES auth.users,
-  email TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE documents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id),
-  ocr_content TEXT,
-  file_url TEXT,
-  parsed_at TIMESTAMP
-);
-
-ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users view own docs" ON documents FOR SELECT USING (auth.uid() = user_id);
-    `.trim());
-
-    setMessages(prev => [...prev, { role: 'agent', content: 'Agent synthesizing logic. Compiling codebase via Nova AI...' }]);
-    
     try {
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt, currentCode: generatedCode || null })
+        body: JSON.stringify({ messages: newMessages, currentCode: generatedCode || null })
       });
       
-      const data = await response.json();
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.details ? `${data.error}: ${data.details}` : (data.error || 'Failed to synthesize app structure.'));
+      if (!response.ok) {
+        let msg = "Failed to synthesize app structure.";
+        try {
+           const errData = await response.json();
+           msg = errData.details || errData.error || msg;
+        } catch(e) {}
+        throw new Error(msg);
       }
+
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let fullText = "";
+      let finalCode = "";
       
-      setGeneratedCode(data.code);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('nova_saved_project', data.code);
+      // Initialize agent message
+      setMessages(prev => [...prev, { role: 'agent', content: '' }]);
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: !done });
+          fullText += chunk;
+
+          // Parse text for thought/code
+          let displayContent = fullText;
+
+          const codeMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*?)```/);
+          if (codeMatch) {
+             finalCode = codeMatch[1];
+             displayContent = fullText.substring(0, codeMatch.index).trim() + "\n\n*Building application workspace...*";
+          } else {
+             const partialMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*)/);
+             if (partialMatch) {
+               finalCode = partialMatch[1];
+               displayContent = fullText.substring(0, partialMatch.index).trim() + "\n\n*Building application workspace...*";
+             }
+          }
+
+          setMessages(prev => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1].content = displayContent.trim();
+            return newMessages;
+          });
+        }
       }
-      setMessages(prev => [...prev, { role: 'agent', content: 'Build complete. Infrastructure resolved globally. Booting Sandpack WebContainer...' }]);
-      
-      await sleep(500);
+
+      if (finalCode) {
+        setGeneratedCode(finalCode.trim());
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('nova_saved_project', finalCode.trim());
+        }
+        setMessages(prev => {
+           const newMess = [...prev];
+           newMess[newMess.length - 1].content += "\n\n✅ **Done! The workspace has been updated.**";
+           return newMess;
+        });
+        setShowPreview(true);
+      } else {
+        // Fallback in case AI didn't wrap the output code in backticks
+        // or just returned plain text, maybe it thinks it's pure code.
+        const cleaned = fullText.trim();
+        if (cleaned.includes('import React') || cleaned.includes('export default')) {
+           setGeneratedCode(cleaned);
+           setShowPreview(true);
+        }
+      }
+
       setIsBuilding(false);
-      setShowPreview(true);
     } catch (e: any) {
       setMessages(prev => [...prev, { role: 'agent', content: `CRITICAL ERROR: ${e.message}` }]);
       setIsBuilding(false);
@@ -208,11 +236,15 @@ CREATE POLICY "Users view own docs" ON documents FOR SELECT USING (auth.uid() = 
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'agent' && (
-                  <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30 font-mono text-xs font-bold">
-                    [N]
+                  <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30 font-mono text-xs font-bold relative">
+                    {isBuilding && i === messages.length - 1 ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "[N]"
+                    )}
                   </div>
                 )}
-                <div className={`p-3 rounded-xl max-w-[85%] text-sm leading-relaxed ${
+                <div className={`p-3 rounded-xl max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white/5 border border-white/10 text-gray-300 rounded-tl-sm'
                 }`}>
                   {msg.content}
@@ -220,13 +252,13 @@ CREATE POLICY "Users view own docs" ON documents FOR SELECT USING (auth.uid() = 
               </div>
             ))}
             
-            {isBuilding && (
+            {isBuilding && messages[messages.length - 1]?.role !== 'agent' && (
               <div className="flex gap-3 justify-start">
                 <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
                   <Loader2 className="w-4 h-4 animate-spin" />
                 </div>
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm italic rounded-tl-sm">
-                  Agent is writing code...
+                  Agent is synthesizing...
                 </div>
               </div>
             )}

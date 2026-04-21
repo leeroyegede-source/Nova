@@ -8,23 +8,36 @@ export const maxDuration = 60; // Allow sufficient LLM processing time
 
 export async function POST(req: Request) {
   try {
-    const { prompt, currentCode } = await req.json();
+    const { prompt, messages, currentCode } = await req.json();
 
-    if (!prompt) {
-      return NextResponse.json({ success: false, error: "Prompt is required" }, { status: 400 });
+    if (!prompt && (!messages || messages.length === 0)) {
+      return new Response(JSON.stringify({ success: false, error: "Prompt or messages required" }), { status: 400 });
     }
+
+    const conversationHistory = messages || [{ role: 'user', content: prompt }];
+    const lastUserMessage = conversationHistory[conversationHistory.length - 1].content;
 
     const systemContext = `
 ${MASTER_BUILDER_PROMPT}
 You are an elite, God-tier autonomous full-stack software engineer. Your target environment is a Sandpack React WebContainer.
     
-CRITICAL INSTRUCTION: You MUST return ONLY the raw React code text as a single default exported component (export default function App() {...}).
-DO NOT wrap the code in \`\`\`jsx or \`\`\`tsx markdown blocks. NO EXPLANATIONS. NO MARKDOWN.
-Return pure valid React code ready to be rendered in Sandpack. You may use inline styles or Tailwind classes.
-Build what the user asks for. Include state logic if needed via standard React hooks.
-CRITICAL CONSTRAINT 1: You MUST keep your entire component code relatively concise (under 250 lines) to prevent max_token truncation.
-CRITICAL CONSTRAINT 2: You MUST explicitly include \`import React, { useState, useEffect } from 'react';\` at the very top of your file. Failure to do so will crash the environment with 'React is not defined'.
-CRITICAL CONSTRAINT 3: To use database, auth, storage, pdf generation, workflow engine, or email automations, you MUST import the internal SDK: \`import { nova } from './NovaBackend';\`. Do NOT fetch external APIs for these. Use \`nova.db.insert('table', data)\`, \`nova.auth.signIn(email, pass)\`, \`nova.automation.triggerEmail(to, subject)\`, \`nova.storage.upload('bucket', file)\`, etc. Attach these to your buttons and forms!
+CRITICAL NEW INSTRUCTIONS:
+You are now highly interactive and conversational. 
+1. DO NOT immediately generate code if the user's request is vague, implies changes that need approval, or if they haven't given you the clear go-ahead. Instead, discuss the plan and ASK FOR APPROVAL.
+2. If the user presents you with an idea, suggest improvements or optimizations, then ask if they'd like you to proceed with them.
+3. If you analyze the \`currentCode\` or the user's logic and spot bugs, performance bottlenecks, or errors, you MUST proactively identify them. Explain clearly why it is a problem, why it is important to fix, and ask the user if you should fix it along with their request.
+4. If you are ONLY conversing/asking questions, simply output your normal markdown response without any \`\`\`jsx blocks.
+5. ONLY when the user has approved the plan or asked directly for the UI/code, you should output the final code.
+
+FORMAT REQUIREMENTS FOR CODE GENERATION (WHEN APPROVED):
+1. First, provide your detailed thoughts and explanations in normal text.
+2. Finally, wrap your actual code in exactly \`\`\`jsx ... \`\`\`.
+2. Finally, when you are ready to provide the code, you MUST wrap it in exactly \`\`\`jsx ... \`\`\`. 
+3. The code MUST be a single default exported React component (export default function App() {...}). Do not put extra code outside the one component block unless it's imports.
+
+CRITICAL CONSTRAINT 1: You MUST explicitly include \`import React, { useState, useEffect } from 'react';\` at the very top of your snippet.
+CRITICAL CONSTRAINT 2: To use database, auth, storage, pdf generation, workflow engine, or email automations, you MUST import the internal SDK: \`import { nova } from './NovaBackend';\`. Do NOT fetch external APIs for these. Use \`nova.db.insert('table', data)\`, etc. Attach these to your buttons and forms!
+CRITICAL CONSTRAINT 3: You have a strict output token limit. Prioritize writing clean, concise components. Do NOT write overly long code blobs, dummy data arrays, or repeating UI sections that exceed 350 lines, or your code will get cut off! Use array maps where possible.
 
 ${currentCode ? `THE USER ALREADY HAS A GENERATED APP. THEY ARE REQUESTING AN EDIT.
 CURRENT APP CODE:
@@ -34,43 +47,63 @@ ${currentCode}
 Modify this code to satisfy their new requests. Ensure you map everything properly without losing core functionality.` : ``}
 `;
 
-    let responseText = "";
-
-    // 1. ANTHROPIC CLAUDE LOGIC
-    if (process.env.CLAUDE_API_KEY) {
-      console.log("Routing Agent Request through Claude 3.5 Sonnet Engine...");
-      const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
-      let msg;
-      let lastError;
-      
-      const modelsToTry = [
-        "claude-opus-4-7",
-        "claude-sonnet-4-6", 
-        "claude-haiku-4-5-20251001"
-      ];
-
-      for (const modelString of modelsToTry) {
-        try {
-          msg = await anthropic.messages.create({
-            model: modelString,
-            max_tokens: 4096,
-            system: systemContext,
-            messages: [{ role: "user", content: `User Request: ${prompt}` }]
-          });
-          break; // Success! Break out of the fallback loop.
-        } catch (e: any) {
-          lastError = e;
-          console.warn(`Claude Model ${modelString} rejected/unavailable. Attempting fallback...`);
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        function emit(text: string) {
+          controller.enqueue(encoder.encode(text));
         }
-      }
-      
-      if (!msg) {
-        console.warn("Anthropic blocked execution. Injecting contextual mock UI...");
-        
-        const isCoffeeShop = prompt.toLowerCase().includes('coffee');
-        
-        if (isCoffeeShop) {
-          responseText = `import React, { useEffect } from 'react';
+
+        try {
+          if (process.env.CLAUDE_API_KEY) {
+            console.log("Routing Agent Request through Claude 3.5 Engine...");
+            const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
+            let stream;
+            
+            const modelsToTry = [
+              "claude-sonnet-4-6",
+              "claude-opus-4-7",
+              "claude-haiku-4-5-20251001",
+              "claude-3-5-sonnet-20241022"
+            ];
+
+            const anthropicMessages = conversationHistory.map((m: any) => ({
+              role: m.role === 'agent' ? 'assistant' : m.role,
+              content: m.content
+            }));
+
+            for (const modelString of modelsToTry) {
+              try {
+                stream = await anthropic.messages.create({
+                  model: modelString,
+                  max_tokens: 8192,
+                  system: systemContext,
+                  messages: anthropicMessages,
+                  stream: true
+                });
+                // If create succeeds, it means no HTTP error was thrown
+                break; 
+              } catch (e: any) {
+                console.warn(`Claude Model ${modelString} stream rejected. Attempting fallback...`);
+                stream = null;
+              }
+            }
+            
+            if (stream) {
+              for await (const chunk of stream) {
+                if (chunk.type === 'content_block_delta' && chunk.delta && chunk.delta.type === 'text_delta') {
+                  emit(chunk.delta.text);
+                }
+              }
+            } else {
+               console.warn("Anthropic blocked execution or models failed. Injecting contextual mock UI...");
+               emit("I'm analyzing your request now. Proceeding to bootstrap the requested architecture framework... Give me a moment to synthesize the UI logic.\n\n");
+               
+               const isCoffeeShop = lastUserMessage.toLowerCase().includes('coffee');
+               
+               let mockCode = "";
+               if (isCoffeeShop) {
+                 mockCode = `import React, { useEffect } from 'react';
 
 export default function CoffeeShopApp() {
   useEffect(() => {
@@ -165,18 +198,12 @@ export default function CoffeeShopApp() {
         </div>
       </section>
 
-      <style dangerouslySetInnerHTML={{__html: \`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      \`}} />
+      <style dangerouslySetInnerHTML={{__html: " @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } "}} />
     </div>
   );
 }`;
-        } else {
-          // If it isn't coffee, give the dashboard
-          responseText = `import React, { useEffect, useState } from 'react';
+               } else {
+                 mockCode = `import React, { useEffect, useState } from 'react';
 
 export default function DashboardApp() {
   useEffect(() => {
@@ -216,87 +243,74 @@ export default function DashboardApp() {
           </div>
         </div>
       </main>
-      <style dangerouslySetInnerHTML={{__html: \`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      \`}} />
+      <style dangerouslySetInnerHTML={{__html: " @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } "}} />
     </div>
   );
 }`;
+               }
+               
+               // Inject the mock code properly wrapped so client frontend parser can extract it
+               emit("I have assembled the requested architecture based on the mock fallbacks! Here is the code.\n\n```jsx\n");
+               emit(mockCode);
+               emit("\n```");
+            }
+
+          } else if (process.env.OPENAI_API_KEY) {
+            console.log("Routing Agent Request through OpenAI GPT-4o Engine...");
+            const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            const openaiMessages = [
+              { role: "system", content: systemContext },
+              ...conversationHistory.map((m: any) => ({
+                role: m.role === 'agent' ? 'assistant' : m.role,
+                content: m.content
+              }))
+            ];
+            const stream = await openai.chat.completions.create({
+              model: "gpt-4o",
+              stream: true,
+              messages: openaiMessages as any
+            });
+            for await (const chunk of stream) {
+              const text = chunk.choices[0]?.delta?.content || "";
+              if (text) emit(text);
+            }
+          } else if (process.env.GEMINI_API_KEY) {
+            console.log("Routing Agent Request through Google Gemini Engine...");
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction: systemContext });
+            
+            const geminiHistory = conversationHistory.slice(0, -1).map((m: any) => ({
+              role: m.role === 'agent' ? 'model' : 'user',
+              parts: [{ text: m.content }]
+            }));
+            const chat = model.startChat({ history: geminiHistory });
+            
+            const streamResult = await chat.sendMessageStream(lastUserMessage);
+            for await (const chunk of streamResult.stream) {
+              emit(chunk.text());
+            }
+          } else {
+            emit("Error: No LLM Provider Keys (Claude, OpenAI, Gemini) found in Environment.");
+          }
+        } catch (e: any) {
+          console.error("Stream Error:", e);
+          emit(`\n\n[Agent Error]: ${e.message}`);
+        } finally {
+          controller.close();
         }
-      } else {
-        // @ts-ignore
-        responseText = msg.content[0].text;
       }
-    } 
-    // 2. OPENAI GPT LOGIC
-    else if (process.env.OPENAI_API_KEY) {
-      console.log("Routing Agent Request through OpenAI GPT-4o Engine...");
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const msg = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemContext },
-          { role: "user", content: `User Request: ${prompt}` }
-        ]
-      });
-      responseText = msg.choices[0].message.content || "";
-    } 
-    // 3. GOOGLE GEMINI LOGIC
-    else if (process.env.GEMINI_API_KEY) {
-      console.log("Routing Agent Request through Google Gemini Engine...");
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const chatResponse = await model.generateContent([
-        systemContext,
-        `User Request: ${prompt}`
-      ]);
-      responseText = chatResponse.response.text().trim();
-    } 
-    // 4. NO KEYS FOUND
-    else {
-      return NextResponse.json({ error: 'No LLM Provider Keys (Claude, OpenAI, Gemini) found in Environment.' }, { status: 500 });
-    }
+    });
 
-    // Clean markdown manually if AI disobeys
-    responseText = responseText.trim();
-    if (responseText.startsWith('\`\`\`jsx') || responseText.startsWith('\`\`\`tsx') || responseText.startsWith('\`\`\`react') || responseText.startsWith('\`\`\`')) {
-      const firstNewline = responseText.indexOf('\n');
-      if (firstNewline !== -1) {
-        responseText = responseText.substring(firstNewline + 1);
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
       }
-      if (responseText.endsWith('\`\`\`')) {
-        responseText = responseText.slice(0, -3);
-      }
-    }
-
-    let finalReactCode = responseText.trim();
-    
-    // Attempt to parse as JSON just in case AI chose the Master template schema
-    try {
-      const parsedJson = JSON.parse(finalReactCode);
-      if (parsedJson && parsedJson.files && parsedJson.files.length > 0) {
-        // Find the main file (usually App.jsx or index.tsx or simply the first one)
-        const mainFile = parsedJson.files.find((f: any) => f.path.includes('App') || f.path.includes('index') || f.path.includes('page')) || parsedJson.files[0];
-        finalReactCode = mainFile.content;
-      }
-    } catch (e) {
-      // It's not JSON, it's just raw code as requested. Proceed.
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      code: finalReactCode,
-      message: "Architecture successfully synthesized."
     });
 
   } catch (error: any) {
     console.error('Nova Agent Engine Error:', error);
-    return NextResponse.json(
-       { error: 'Agent engine compilation failure', details: error.message },
-       { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Agent engine compilation failure', details: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
+

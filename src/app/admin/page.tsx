@@ -16,7 +16,7 @@ export default function AdminDashboard() {
     if (auth !== "admin_authenticated") {
       router.push("/login");
     } else {
-      setIsAdmin(true);
+      setTimeout(() => setIsAdmin(true), 0);
     }
   }, [router]);
 
