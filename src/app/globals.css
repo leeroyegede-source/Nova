@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), "Inter", "Helvetica Neue", sans-serif;
+  --font-mono: "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", monospace;
+
+  /* Colors - Dark Premium Theme */
+  --color-background: #000000;
+  --color-foreground: #F8FAFC;
+  --color-primary: #3B82F6;       /* Blue */
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #0F172A;     /* Dark Blue/Gray */
+  --color-secondary-foreground: #E2E8F0;
+  --color-accent: #6366F1;        /* Indigo */
+  --color-accent-foreground: #FFFFFF;
+  --color-border: #1E293B;
+  --color-muted: #64748B;
+  
+  --color-surface: rgba(15, 23, 42, 0.4); /* Glassmorphism surface */
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+@layer base {
+  :root {
+    --background: #000000;
+    --foreground: #F8FAFC;
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-[#1E293B];
+  }
+  body {
+    @apply bg-black text-white font-sans antialiased overflow-x-hidden;
+  }
+}
+
+.glass-panel {
+  @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl;
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400;
+}
+
+.button-gradient {
+  @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 transition-all duration-300;
+}
