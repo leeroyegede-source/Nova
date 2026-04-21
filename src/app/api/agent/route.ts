@@ -63,7 +63,10 @@ Modify this code to satisfy their new requests. Ensure you map everything proper
         try {
           if (process.env.CLAUDE_API_KEY) {
             console.log("Routing Agent Request through Claude 3.5 Engine...");
-            const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
+            const anthropic = new Anthropic({ 
+              apiKey: process.env.CLAUDE_API_KEY,
+              defaultHeaders: { 'anthropic-beta': 'max-tokens-3-5-sonnet-2024-07-15' }
+            });
             let stream;
             
             const modelsToTry = [
@@ -290,6 +293,7 @@ export default function DashboardApp() {
             const stream = await openai.chat.completions.create({
               model: "gpt-4o",
               stream: true,
+              max_tokens: 16383,
               messages: openaiMessages as any
             });
             for await (const chunk of stream) {

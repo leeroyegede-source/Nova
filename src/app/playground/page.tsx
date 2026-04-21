@@ -216,6 +216,8 @@ export default function Playground() {
       let fullText = "";
       let finalCode = "";
       
+      let isCodeFullyClosed = false;
+      
       // Initialize agent message
       setMessages(prev => [...prev, { role: 'agent', content: '' }]);
 
@@ -232,11 +234,13 @@ export default function Playground() {
           const codeMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*?)```/);
           if (codeMatch) {
              finalCode = codeMatch[1];
+             isCodeFullyClosed = true;
              displayContent = fullText.substring(0, codeMatch.index).trim() + "\n\n*Building application workspace...*";
           } else {
              const partialMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*)/);
              if (partialMatch) {
                finalCode = partialMatch[1];
+               isCodeFullyClosed = false;
                displayContent = fullText.substring(0, partialMatch.index).trim() + "\n\n*Building application workspace...*";
              }
           }
@@ -249,7 +253,7 @@ export default function Playground() {
         }
       }
 
-      if (finalCode) {
+      if (finalCode && isCodeFullyClosed) {
         setGeneratedCode(finalCode.trim());
         if (typeof window !== 'undefined') {
           localStorage.setItem('nova_saved_project', finalCode.trim());
@@ -260,6 +264,13 @@ export default function Playground() {
            return newMess;
         });
         setShowPreview(true);
+      } else if (finalCode && !isCodeFullyClosed) {
+        // Handle stream truncation gracefully without crashing sandbox
+        setMessages(prev => {
+           const newMess = [...prev];
+           newMess[newMess.length - 1].content += "\n\n⚠️ **Warning: Code generation hit API token limit and was truncated!** I have paused the UI compiler to prevent syntax crashes. Please run 'continue generating' to finish the code loop.";
+           return newMess;
+        });
       } else {
         // Fallback in case AI didn't wrap the output code in backticks
         // or just returned plain text, maybe it thinks it's pure code.
