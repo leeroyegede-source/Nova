@@ -20,7 +20,7 @@ export default function Login() {
     setError(null);
     
     // Check if the login is an admin bypass
-    if (email === "admin@nova.ai") {
+    if (email === "leeroyegede@gmail.com") {
       localStorage.setItem("nova_auth_token", "admin_authenticated");
       router.push("/admin");
       return;
@@ -37,7 +37,7 @@ export default function Login() {
       setLoading(false);
     } else {
       // Check if Admin approved them
-      if (data.user && data.user.user_metadata?.is_active !== true && email !== "admin@nova.ai") {
+      if (data.user && data.user.user_metadata?.is_active !== true && email !== "leeroyegede@gmail.com") {
         await supabase.auth.signOut();
         setError("Your account is pending admin approval. Please wait for activation.");
         setLoading(false);
