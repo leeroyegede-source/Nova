@@ -34,7 +34,7 @@ export default function Playground() {
   const [saveProjectName, setSaveProjectName] = useState("");
   const [savedProjects, setSavedProjects] = useState<{id: string, name: string, code: string, messages: any[], timestamp: number}[]>([]);
 
-  const [generatedCode, setGeneratedCode] = useState("");
+  const [generatedFiles, setGeneratedFiles] = useState<Record<string, string>>({});
   const [generatedSchema, setGeneratedSchema] = useState("");
   const [showPreview, setShowPreview] = useState(false);
 
@@ -45,8 +45,11 @@ export default function Playground() {
   };
 
   const handleDownload = () => {
-    if (!generatedCode) return;
-    const blob = new Blob([generatedCode], { type: 'text/javascript' });
+    if (Object.keys(generatedFiles).length === 0) return;
+    
+    // Fallback: If only one file (App.js) exists, just export standard
+    const exportCode = generatedFiles["/App.js"] || Object.values(generatedFiles)[0];
+    const blob = new Blob([exportCode], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -58,11 +61,13 @@ export default function Playground() {
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !generatedCode) {
-      const saved = localStorage.getItem('nova_saved_project');
+    if (typeof window !== 'undefined' && Object.keys(generatedFiles).length === 0) {
+      const saved = localStorage.getItem('nova_saved_project_files');
       if (saved) {
-        setGeneratedCode(saved);
-        setShowPreview(true);
+         try {
+            setGeneratedFiles(JSON.parse(saved));
+            setShowPreview(true);
+         } catch(e) {}
       }
     }
     
@@ -125,7 +130,7 @@ export default function Playground() {
   };
 
   const handleSaveProjectClick = () => {
-    if (!generatedCode && messages.length <= 1) {
+    if (Object.keys(generatedFiles).length === 0 && messages.length <= 1) {
        alert("No workspace progress to save!");
        return;
     }
@@ -139,7 +144,7 @@ export default function Playground() {
     const newProject = {
       id: Date.now().toString(),
       name: saveProjectName,
-      code: generatedCode,
+      code: JSON.stringify(generatedFiles),
       messages: messages,
       timestamp: Date.now()
     };
@@ -156,11 +161,15 @@ export default function Playground() {
   };
 
   const loadProject = (project: any) => {
-    setGeneratedCode(project.code);
+    try {
+      setGeneratedFiles(JSON.parse(project.code));
+    } catch {
+      setGeneratedFiles({ "/App.js": project.code });
+    }
     setMessages(project.messages);
     setShowPreview(true);
     setShowProjectsModal(false);
-    localStorage.setItem('nova_saved_project', project.code);
+    localStorage.setItem('nova_saved_project_files', project.code);
   };
 
   const deleteProject = (id: string) => {
@@ -196,7 +205,7 @@ export default function Playground() {
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages, currentCode: generatedCode || null })
+        body: JSON.stringify({ messages: apiMessages, currentCode: Object.keys(generatedFiles).length > 0 ? JSON.stringify(generatedFiles) : null })
       });
       
       if (!response.ok) {
@@ -214,8 +223,7 @@ export default function Playground() {
       const decoder = new TextDecoder();
       let done = false;
       let fullText = "";
-      let finalCode = "";
-      
+      let finalFiles: Record<string, string> = {};
       let isCodeFullyClosed = false;
       
       // Initialize agent message
@@ -225,46 +233,64 @@ export default function Playground() {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         if (value) {
-          const chunk = decoder.decode(value, { stream: !done });
-          fullText += chunk;
+           const chunk = decoder.decode(value, { stream: !done });
+           fullText += chunk;
 
-          // Parse text for thought/code
-          let displayContent = fullText;
+           const closedFilesMatch = [...fullText.matchAll(/<nova-file\s+path="([^"]+)">([\s\S]*?)<\/nova-file>/g)];
+           const newFiles: Record<string, string> = {};
+           closedFilesMatch.forEach(m => { newFiles[m[1]] = m[2].trim(); });
+           
+           let displayContent = fullText.replaceAll(/<nova-file[\s\S]*?<\/nova-file>/g, '').trim();
 
-          const codeMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*?)```/);
-          if (codeMatch) {
-             finalCode = codeMatch[1];
-             isCodeFullyClosed = true;
-             displayContent = fullText.substring(0, codeMatch.index).trim() + "\n\n*Building application workspace...*";
-          } else {
-             const partialMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*)/);
-             if (partialMatch) {
-               finalCode = partialMatch[1];
-               isCodeFullyClosed = false;
-               displayContent = fullText.substring(0, partialMatch.index).trim() + "\n\n*Building application workspace...*";
-             }
-          }
+           const remainingText = fullText.replace(/<nova-file[\s\S]*?<\/nova-file>/g, '');
+           const unclosedMatch = remainingText.match(/<nova-file\s+path="([^"]+)">([\s\S]*)$/);
+           
+           isCodeFullyClosed = !unclosedMatch;
 
-          setMessages(prev => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1].content = displayContent.trim();
-            return newMessages;
-          });
+           if (unclosedMatch) {
+              newFiles[unclosedMatch[1]] = unclosedMatch[2];
+              displayContent = remainingText.replace(/<nova-file[\s\S]*$/, '').trim() + "\n\n*Building " + unclosedMatch[1] + "...*";
+           } else if (Object.keys(newFiles).length > 0) {
+              displayContent += "\n\n*Multi-file workspace compiled...*";
+           } else {
+              // Backward compatibility fallback
+              const codeMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*?)```/);
+              if (codeMatch) {
+                 newFiles["/App.js"] = codeMatch[1];
+                 isCodeFullyClosed = true;
+                 displayContent = fullText.substring(0, codeMatch.index).trim() + "\n\n*Building application workspace...*";
+              } else {
+                 const partialMatch = fullText.match(/```[a-zA-Z]*\s*\n([\s\S]*)/);
+                 if (partialMatch) {
+                   newFiles["/App.js"] = partialMatch[1];
+                   isCodeFullyClosed = false;
+                   displayContent = fullText.substring(0, partialMatch.index).trim() + "\n\n*Building application workspace...*";
+                 }
+              }
+           }
+           
+           finalFiles = newFiles;
+
+           setMessages(prev => {
+             const newMessages = [...prev];
+             newMessages[newMessages.length - 1].content = displayContent.trim();
+             return newMessages;
+           });
         }
       }
 
-      if (finalCode && isCodeFullyClosed) {
-        setGeneratedCode(finalCode.trim());
+      if (Object.keys(finalFiles).length > 0 && isCodeFullyClosed) {
+        setGeneratedFiles(finalFiles);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('nova_saved_project', finalCode.trim());
+          localStorage.setItem('nova_saved_project_files', JSON.stringify(finalFiles));
         }
         setMessages(prev => {
            const newMess = [...prev];
-           newMess[newMess.length - 1].content += "\n\n✅ **Done! The workspace has been updated.**";
+           newMess[newMess.length - 1].content += "\n\n✅ **Done! The multi-file workspace has been updated.**";
            return newMess;
         });
         setShowPreview(true);
-      } else if (finalCode && !isCodeFullyClosed) {
+      } else if (Object.keys(finalFiles).length > 0 && !isCodeFullyClosed) {
         // Handle stream truncation gracefully without crashing sandbox
         setMessages(prev => {
            const newMess = [...prev];
@@ -276,7 +302,7 @@ export default function Playground() {
         // or just returned plain text, maybe it thinks it's pure code.
         const cleaned = fullText.trim();
         if (cleaned.includes('import React') || cleaned.includes('export default')) {
-           setGeneratedCode(cleaned);
+           setGeneratedFiles({ "/App.js": cleaned });
            setShowPreview(true);
         }
       }
@@ -462,7 +488,7 @@ export default function Playground() {
         <div className="flex-1 bg-[#09090b] relative overflow-hidden flex flex-col">
           
           {/* Template Registry Overlay (shows if no preview available) */}
-          {!showPreview && !isBuilding && generatedCode === "" && (
+          {!showPreview && !isBuilding && Object.keys(generatedFiles).length === 0 && (
             <div className="absolute inset-0 z-20 flex flex-col bg-black/40 backdrop-blur-sm p-8 overflow-y-auto">
               <div className="max-w-4xl mx-auto w-full">
                 <div className="flex items-center justify-between mb-8">
@@ -597,7 +623,7 @@ export default function Playground() {
                         }
                       }}
                       files={{
-                        "/App.js": generatedCode,
+                        ...generatedFiles,
                         "/NovaAssets.js": `export const ASSETS = ${JSON.stringify(
                           projectAssets.reduce((acc, a) => ({ ...acc, [a.name]: a.dataUrl }), {})
                         )};`,
@@ -706,7 +732,7 @@ export const nova = {
                     >
                       <SandpackLayout className="h-full w-full !rounded-none !border-none">
                         {sandboxView === 'code' ? (
-                          <SandpackCodeEditor className="h-full w-full" showLineNumbers={true} showTabs={false} />
+                          <SandpackCodeEditor className="h-full w-full" showLineNumbers={true} showTabs={true} />
                         ) : (
                           <SandpackPreview className="h-full w-full" showNavigator={false} />
                         )}
