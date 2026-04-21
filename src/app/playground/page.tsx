@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TEMPLATE_REGISTRY } from "@/lib/templates";
-import { Sandpack } from "@codesandbox/sandpack-react";
+import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor } from "@codesandbox/sandpack-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mock AI simulation delays
@@ -25,6 +25,7 @@ export default function Playground() {
   ]);
   const [isBuilding, setIsBuilding] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database'>('preview');
+  const [sandboxView, setSandboxView] = useState<'preview' | 'code'>('preview');
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [searchTemplate, setSearchTemplate] = useState("");
   const [showProjectsModal, setShowProjectsModal] = useState(false);
@@ -292,14 +293,14 @@ export default function Playground() {
         <div className="flex items-center gap-4">
           <div className="flex overflow-x-auto md:overflow-visible max-w-[55vw] md:max-w-none bg-white/5 border border-white/10 rounded-lg p-1 space-x-1 hide-scrollbar">
             <button 
-              onClick={() => setActiveTab('preview')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'preview' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+              onClick={() => { setActiveTab('preview'); setSandboxView('preview'); }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'preview' && sandboxView === 'preview' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               <div className="flex items-center gap-2"><Play className="w-4 h-4" /> Preview</div>
             </button>
             <button 
-              onClick={() => setActiveTab('code')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'code' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+              onClick={() => { setActiveTab('preview'); setSandboxView('code'); }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'preview' && sandboxView === 'code' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               <div className="flex items-center gap-2"><Code2 className="w-4 h-4" /> Code</div>
             </button>
@@ -509,29 +510,32 @@ export default function Playground() {
 
           {/* Active Workspaces */}
           {activeTab === 'preview' && showPreview && (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[url('https://transparenttextures.com/patterns/cubes.png')] bg-opacity-20 relative">
-              <div className="absolute top-4 right-4 flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 z-10">
+            <div className={`flex-1 flex flex-col relative ${deviceView === 'mobile' ? 'p-8 items-center justify-center bg-[url("https://transparenttextures.com/patterns/cubes.png")] bg-opacity-20' : 'p-0 bg-[#09090b]'}`}>
+              
+              <div className="absolute top-4 right-4 flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 z-20 shadow-xl">
                 <button 
                   onClick={() => setDeviceView('desktop')}
                   className={`p-1.5 rounded ${deviceView === 'desktop' ? 'bg-white/20 text-white' : 'text-gray-400'}`}
+                  title="Desktop View"
                 ><Monitor className="w-4 h-4" /></button>
                 <button 
                   onClick={() => setDeviceView('mobile')}
                   className={`p-1.5 rounded ${deviceView === 'mobile' ? 'bg-white/20 text-white' : 'text-gray-400'}`}
+                  title="Mobile View"
                 ><Smartphone className="w-4 h-4" /></button>
               </div>
 
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className={`bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-500 border border-white/20 ${
-                  deviceView === 'mobile' ? 'w-[375px] h-[812px]' : 'w-full max-w-5xl h-[700px]'
+                className={`bg-white shadow-2xl overflow-hidden transition-all duration-500 z-10 ${
+                  deviceView === 'mobile' ? 'w-[375px] h-[812px] rounded-xl border border-white/20' : 'w-full h-full rounded-none border-none'
                 }`}
               >
                 {/* Live Sandpack execution of real react strings mapped directly without static DOM */}
-                <div className="h-full w-full flex-1">
+                <div className="h-full w-full flex-1 relative">
                   <ErrorBoundary>
-                    <Sandpack 
+                    <SandpackProvider 
                       theme="dark" 
                       template="react" 
                       customSetup={{
@@ -643,28 +647,18 @@ export const nova = {
 };
 `
                       }}
-                      options={{ 
-                        showNavigator: true, 
-                        showTabs: false,
-                        editorHeight: "100%",
-                        classes: {
-                          "sp-wrapper": "h-full w-full",
-                          "sp-layout": "h-full w-full",
-                          "sp-card": "h-[660px]"
-                        }
-                      }} 
-                    />
+                    >
+                      <SandpackLayout className="h-full w-full !rounded-none !border-none">
+                        {sandboxView === 'code' ? (
+                          <SandpackCodeEditor className="h-full w-full" showLineNumbers={true} showTabs={false} />
+                        ) : (
+                          <SandpackPreview className="h-full w-full" showNavigator={true} />
+                        )}
+                      </SandpackLayout>
+                    </SandpackProvider>
                   </ErrorBoundary>
                 </div>
               </motion.div>
-            </div>
-          )}
-
-          {activeTab === 'code' && (
-            <div className="flex-1 p-6 overflow-y-auto font-mono text-sm">
-              <pre className="text-gray-300">
-                <code dangerouslySetInnerHTML={{ __html: generatedCode || "// Waiting for Agent generation..." }} />
-              </pre>
             </div>
           )}
 
