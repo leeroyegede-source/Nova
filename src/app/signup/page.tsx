@@ -39,7 +39,16 @@ export default function Signup() {
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
+    } else if (data?.user) {
+      // Duplicate profile into public users table for easy querying
+      await supabase.from('users').insert({
+        id: data.user.id,
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
+        is_active: false
+      });
+      
       // Success - force sign out so they can't bypass via auth session token
       await supabase.auth.signOut();
       setSuccessMsg("Account created! Waiting for Admin approval to login.");
