@@ -153,6 +153,16 @@ export default function Playground() {
     }
   }, [router]);
 
+  const handleClearProject = () => {
+    if (confirm("Are you sure you want to clear the current workspace? Unsaved changes will be lost.")) {
+      setGeneratedFiles({});
+      setMessages([]);
+      setShowPreview(false);
+      localStorage.removeItem('nova_saved_project_files');
+      localStorage.removeItem('nova_saved_project_messages');
+    }
+  };
+
   useEffect(() => { scrollToBottom() }, [messages, isBuilding]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -445,6 +455,12 @@ export default function Playground() {
               className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-purple-600 hover:bg-purple-500 text-white shadow shadow-purple-500/20`}
             >
               <div className="flex items-center gap-2"><Save className="w-4 h-4" /> Save</div>
+            </button>
+            <button 
+              onClick={handleClearProject}
+              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 text-red-200 shadow`}
+            >
+              <div className="flex items-center gap-2"><Trash2 className="w-4 h-4" /> Clear</div>
             </button>
             <button 
               onClick={handleDeployVercel}
