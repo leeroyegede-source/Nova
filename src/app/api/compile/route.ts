@@ -39,7 +39,12 @@ export async function POST(req: Request) {
                 return { path: args.path, external: true };
               }
               if (!args.path.startsWith('.')) {
-                return { path: `https://esm.sh/${args.path}`, external: true };
+                let pkg = args.path;
+                if (pkg === 'react') pkg = 'react@18';
+                if (pkg === 'react-dom' || pkg === 'react-dom/client') pkg = 'react-dom@18/client';
+                if (pkg === 'react-dom/server') pkg = 'react-dom@18/server';
+                
+                return { path: `https://esm.sh/${pkg}?deps=react@18,react-dom@18`, external: true };
               }
               
               return { path: args.path, namespace: 'virtual' };
