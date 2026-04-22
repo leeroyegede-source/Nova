@@ -24,16 +24,6 @@ export async function POST(req: Request) {
           setup(build) {
             build.onResolve({ filter: /.*/ }, (args) => {
               if (args.path === 'index.js') return { path: 'index.js', namespace: 'virtual' };
-              if (args.path === 'App.js' || args.path === './App.js') return { path: 'App.js', namespace: 'virtual' };
-              
-              let relativePath = args.path.replace('./', '').replace('../', '');
-              if (!relativePath.endsWith('.js') && !relativePath.endsWith('.tsx') && !relativePath.endsWith('.css')) {
-                  relativePath += '.js';
-              }
-              
-              if (files[relativePath] || files[`/${relativePath}`]) {
-                return { path: relativePath, namespace: 'virtual' };
-              }
               
               if (args.path.startsWith('http://') || args.path.startsWith('https://')) {
                 return { path: args.path, external: true };
@@ -42,20 +32,50 @@ export async function POST(req: Request) {
                 return { path: args.path, external: true };
               }
               
-              if (!args.path.startsWith('.')) {
+              let resolvedPath = args.path;
+              if (args.path.startsWith('.')) {
+                let basePath = args.importer === 'index.js' ? '' : args.importer;
+                const parts = basePath ? basePath.split('/') : [];
+                if (parts.length > 0) parts.pop();
+                
+                const pathParts = args.path.split('/');
+                for (const part of pathParts) {
+                    if (part === '.') continue;
+                    if (part === '..') parts.pop();
+                    else parts.push(part);
+                }
+                resolvedPath = parts.join('/');
+              } else if (args.path.startsWith('@/')) {
+                  resolvedPath = args.path.substring(2);
+              }
+
+              const extensions = ['', '.js', '.jsx', '.ts', '.tsx', '.css'];
+              for (const ext of extensions) {
+                const p = resolvedPath + ext;
+                if (files[p] || files[`/${p}`]) {
+                  return { path: p, namespace: 'virtual' };
+                }
+              }
+
+              if (!args.path.startsWith('.') && !args.path.startsWith('/') && !args.path.startsWith('@/')) {
                 return { path: `https://esm.sh/${args.path}?external=react,react-dom`, external: true };
               }
-              
+
               return { path: args.path, namespace: 'virtual' };
             });
 
             build.onLoad({ filter: /.*/, namespace: 'virtual' }, (args) => {
               if (args.path === 'index.js') {
+                let appPath = './App.js';
+                if (files['App.tsx'] || files['/App.tsx']) appPath = './App.tsx';
+                else if (files['src/App.js'] || files['/src/App.js']) appPath = './src/App.js';
+                else if (files['src/App.tsx'] || files['/src/App.tsx']) appPath = './src/App.tsx';
+
                 return {
                   contents: `
                     import React from 'react';
                     import { createRoot } from 'react-dom/client';
-                    import App from './App.js';
+                    import App from '${appPath}';
                     
                     const root = createRoot(document.getElementById('root'));
                     root.render(React.createElement(App.default || App));
@@ -68,7 +88,7 @@ export async function POST(req: Request) {
               if (content) {
                 return {
                   contents: content,
-                  loader: args.path.endsWith('.css') ? 'css' : 'jsx',
+                  loader: args.path.endsWith('.css') ? 'css' : (args.path.endsWith('.ts') ? 'ts' : 'jsx'),
                 };
               }
             });
