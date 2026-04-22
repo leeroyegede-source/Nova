@@ -17,7 +17,6 @@ import DatabasePreview from "@/components/DatabasePreview";
 import { ReactFlow, Background, Controls } from 'reactflow';
 import 'reactflow/dist/style.css';
 import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 
 // Mock AI simulation delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -160,7 +159,15 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
       zip.file('README.md', readmeContent);
 
       const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, `NovaApp_${Date.now()}.zip`);
+      
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `NovaApp_${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
       setMessages(prev => [...prev, { role: 'agent', content: `✅ **Download Successful!** Your code has been downloaded as a ZIP file.` }]);
     } catch (e: any) {
