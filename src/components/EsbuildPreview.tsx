@@ -37,7 +37,7 @@ export default function EsbuildPreview({ files, className = '' }: any) {
       
       const doBuild = async () => {
         return await esbuild.build({
-          entryPoints: ['App.js'],
+          entryPoints: ['index.js'],
           bundle: true,
           write: false,
           format: 'esm',
@@ -46,7 +46,8 @@ export default function EsbuildPreview({ files, className = '' }: any) {
               name: 'virtual-fs',
               setup(build) {
                 build.onResolve({ filter: /.*/ }, (args) => {
-                  if (args.path === 'App.js') return { path: args.path, namespace: 'virtual' };
+                  if (args.path === 'index.js') return { path: 'index.js', namespace: 'virtual' };
+                  if (args.path === 'App.js' || args.path === './App.js') return { path: 'App.js', namespace: 'virtual' };
                   
                   let relativePath = args.path.replace('./', '').replace('../', '');
                   if (!relativePath.endsWith('.js') && !relativePath.endsWith('.tsx') && !relativePath.endsWith('.css')) {
@@ -65,6 +66,20 @@ export default function EsbuildPreview({ files, className = '' }: any) {
                 });
 
                 build.onLoad({ filter: /.*/, namespace: 'virtual' }, (args) => {
+                  if (args.path === 'index.js') {
+                    return {
+                      contents: `
+                        import React from 'https://esm.sh/react@18';
+                        import { createRoot } from 'https://esm.sh/react-dom@18/client';
+                        import App from './App.js';
+                        
+                        const root = createRoot(document.getElementById('root'));
+                        root.render(React.createElement(App));
+                      `,
+                      loader: 'jsx'
+                    };
+                  }
+
                   const content = files[args.path] || files[`/${args.path}`];
                   if (content) {
                     return {
@@ -94,17 +109,13 @@ export default function EsbuildPreview({ files, className = '' }: any) {
               </head>
               <body>
                 <div id="root"></div>
+                <script>
+                  window.addEventListener('error', function(e) {
+                    document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">Runtime Error: ' + e.message + '</div>';
+                  });
+                </script>
                 <script type="module">
-                  import React from 'https://esm.sh/react@18';
-                  import { createRoot } from 'https://esm.sh/react-dom@18/client';
-                  
-                  try {
-                    ${bundledCode}
-                    const root = createRoot(document.getElementById('root'));
-                    root.render(React.createElement(App.default || App));
-                  } catch (err) {
-                    document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">Runtime Error: ' + err.message + '</div>';
-                  }
+                  ${bundledCode}
                 </script>
               </body>
             </html>
