@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { TEMPLATE_REGISTRY } from "@/lib/templates";
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import EsbuildPreview from "@/components/EsbuildPreview";
 
 // Mock AI simulation delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -44,6 +45,7 @@ export default function Playground() {
   const [isBuilding, setIsBuilding] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database' | 'assets'>('preview');
   const [sandboxView, setSandboxView] = useState<'preview' | 'code'>('preview');
+  const [previewEngine, setPreviewEngine] = useState<'sandpack' | 'nova'>('sandpack');
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [projectAssets, setProjectAssets] = useState<{name: string, dataUrl: string}[]>([]);
   const [searchTemplate, setSearchTemplate] = useState("");
@@ -645,6 +647,17 @@ export default function Playground() {
                     className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${sandboxView === 'code' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
                   >Code</button>
                 </div>
+
+                <div className="flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-xl">
+                  <button 
+                    onClick={() => setPreviewEngine('sandpack')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${previewEngine === 'sandpack' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >Sandpack</button>
+                  <button 
+                    onClick={() => setPreviewEngine('nova')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${previewEngine === 'nova' ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >Nova Engine</button>
+                </div>
                 
                 <div className="flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-xl">
                   <button 
@@ -797,15 +810,26 @@ export const nova = {
 `
                       }}
                     >
-                      <SandpackLayout className="h-full w-full !rounded-none !border-none relative">
-                        <SandpackAutoHealer isBuilding={isBuilding} onHealTrigger={(msg) => handlePromptSubmit(msg)} />
-                        <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${sandboxView === 'code' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
-                          <SandpackCodeEditor style={{ height: '100%' }} showLineNumbers={true} showTabs={true} />
+                      {previewEngine === 'sandpack' ? (
+                        <SandpackLayout className="h-full w-full !rounded-none !border-none relative">
+                          <SandpackAutoHealer isBuilding={isBuilding} onHealTrigger={(msg) => handlePromptSubmit(msg)} />
+                          <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${sandboxView === 'code' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+                            <SandpackCodeEditor style={{ height: '100%' }} showLineNumbers={true} showTabs={true} />
+                          </div>
+                          <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${sandboxView === 'preview' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+                            <SandpackPreview style={{ height: '100%' }} showNavigator={false} />
+                          </div>
+                        </SandpackLayout>
+                      ) : (
+                        <div className="h-full w-full flex flex-col relative bg-[#1e1e1e]">
+                          <div className={`absolute inset-0 z-10 ${sandboxView === 'code' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                            <SandpackCodeEditor style={{ height: '100%' }} showLineNumbers={true} showTabs={true} />
+                          </div>
+                          <div className={`absolute inset-0 z-0 ${sandboxView === 'preview' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                            <EsbuildPreview files={generatedFiles} className="h-full w-full" />
+                          </div>
                         </div>
-                        <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${sandboxView === 'preview' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
-                          <SandpackPreview style={{ height: '100%' }} showNavigator={false} />
-                        </div>
-                      </SandpackLayout>
+                      )}
                     </SandpackProvider>
                   </ErrorBoundary>
                 </div>
