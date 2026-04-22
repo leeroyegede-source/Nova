@@ -797,13 +797,13 @@ export const nova = {
 `
                       }}
                     >
-                      <SandpackLayout className="h-full w-full !rounded-none !border-none">
+                      <SandpackLayout className="h-full w-full !rounded-none !border-none relative">
                         <SandpackAutoHealer isBuilding={isBuilding} onHealTrigger={(msg) => handlePromptSubmit(msg)} />
-                        <div style={{ display: sandboxView === 'code' ? 'block' : 'none', height: '100%', width: '100%' }}>
-                          <SandpackCodeEditor className="h-full w-full" showLineNumbers={true} showTabs={true} />
+                        <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${sandboxView === 'code' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+                          <SandpackCodeEditor style={{ height: '100%' }} showLineNumbers={true} showTabs={true} />
                         </div>
-                        <div style={{ display: sandboxView === 'preview' ? 'block' : 'none', height: '100%', width: '100%' }}>
-                          <SandpackPreview className="h-full w-full" showNavigator={false} />
+                        <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${sandboxView === 'preview' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+                          <SandpackPreview style={{ height: '100%' }} showNavigator={false} />
                         </div>
                       </SandpackLayout>
                     </SandpackProvider>
