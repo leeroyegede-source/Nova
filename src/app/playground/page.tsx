@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
-  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon
+  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,8 @@ import { TEMPLATE_REGISTRY } from "@/lib/templates";
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DatabasePreview from "@/components/DatabasePreview";
+import { ReactFlow, Background, Controls } from 'reactflow';
+import 'reactflow/dist/style.css';
 
 // Mock AI simulation delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -55,6 +57,13 @@ export default function Playground() {
   const [saveProjectName, setSaveProjectName] = useState("");
   const [deployProjectName, setDeployProjectName] = useState("");
   const [savedProjects, setSavedProjects] = useState<{id: string, name: string, code: string, messages: any[], timestamp: number}[]>([]);
+
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [brandContext, setBrandContext] = useState("");
+  const [targetPlatform, setTargetPlatform] = useState<'web' | 'mobile'>('web');
+  const [showGithubModal, setShowGithubModal] = useState(false);
+  const [githubRepoName, setGithubRepoName] = useState("");
+  const [githubToken, setGithubToken] = useState("");
 
   const [generatedFiles, setGeneratedFiles] = useState<Record<string, string>>({});
   const [generatedSchema, setGeneratedSchema] = useState("");
@@ -120,6 +129,27 @@ export default function Playground() {
       setMessages(prev => [...prev, { role: 'agent', content: `🔥 **Edge Deployment Successful!**\n\nThe Vercel cluster has successfully built your unified architecture.\n\n🔗 **Live URL:** [${data.url}](https://${data.url})` }]);
     } catch(e: any) {
       setMessages(prev => [...prev, { role: 'agent', content: `⚠️ **Deployment Terminated:** ${e.message}` }]);
+    }
+  };
+
+  const confirmPushGithub = async () => {
+    setShowGithubModal(false);
+    if (!githubRepoName.trim() || !githubToken.trim()) return;
+
+    setMessages(prev => [...prev, { role: 'agent', content: `[SYSTEM WORKFLOW]: Pushing workspace to GitHub repository '${githubRepoName}'...` }]);
+    
+    try {
+      const res = await fetch('/api/deploy/github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: generatedFiles, repoName: githubRepoName, token: githubToken })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "GitHub push failed");
+      
+      setMessages(prev => [...prev, { role: 'agent', content: `✅ **GitHub Push Successful!**\n\nYour code is now in your repository.\n\n🔗 **Repo URL:** [${data.url}](${data.url})` }]);
+    } catch(e: any) {
+      setMessages(prev => [...prev, { role: 'agent', content: `⚠️ **Push Terminated:** ${e.message}` }]);
     }
   };
 
@@ -276,7 +306,12 @@ export default function Playground() {
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages, currentCode: Object.keys(generatedFiles).length > 0 ? JSON.stringify(generatedFiles) : null })
+        body: JSON.stringify({ 
+          messages: apiMessages, 
+          currentCode: Object.keys(generatedFiles).length > 0 ? JSON.stringify(generatedFiles) : null,
+          brandContext,
+          targetPlatform
+        })
       });
       
       if (!response.ok) {
@@ -577,6 +612,25 @@ export const nova = {
             >
               <div className="flex items-center gap-2 font-bold tracking-tight">▲ Deploy to Vercel</div>
             </button>
+            <button 
+              onClick={() => {
+                if (Object.keys(generatedFiles).length === 0) {
+                  setMessages(prev => [...prev, { role: 'agent', content: "⚠️ **Push Error:** No active code architecture was found in the IDE workspace!"}]);
+                  return;
+                }
+                setGithubRepoName(`nova-app-${Date.now().toString().slice(-4)}`);
+                setShowGithubModal(true);
+              }}
+              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-gray-800 hover:bg-gray-700 text-white shadow border border-white/20`}
+            >
+              <div className="flex items-center gap-2 font-bold tracking-tight"><Upload className="w-4 h-4" /> Push to GitHub</div>
+            </button>
+            <button 
+              onClick={() => setShowSettingsModal(true)}
+              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10 hover:bg-white/10 text-white shadow`}
+            >
+              <div className="flex items-center gap-2"><Settings className="w-4 h-4" /> Settings</div>
+            </button>
           </div>
           
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-sm font-bold shadow-lg shadow-purple-500/20">
@@ -862,13 +916,70 @@ export const nova = {
           )}
 
           {activeTab === 'database' && (
-            <div className="flex-1 p-6 overflow-y-auto font-mono text-sm">
-              <div className="mb-4 text-xs font-sans text-gray-500 bg-white/5 border border-white/10 rounded p-3">
-                <strong className="text-blue-400">Architecture Engine:</strong> The agent automatically creates logical schema blueprints corresponding to the frontend data needs, instantly pushing them to managed Supabase clusters via GraphQL APIs.
+            <div className="flex-1 overflow-y-auto flex flex-col font-mono text-sm">
+              <div className="p-6 pb-2">
+                <div className="mb-4 text-xs font-sans text-gray-500 bg-white/5 border border-white/10 rounded p-3">
+                  <strong className="text-blue-400">Architecture Engine:</strong> The agent automatically creates logical schema blueprints. We visualize the parsed tables below.
+                </div>
               </div>
-              <pre className="text-gray-300">
-                <code dangerouslySetInnerHTML={{ __html: generatedSchema || "-- Waiting for Schema generation..." }} />
-              </pre>
+              <div className="flex-1 w-full h-full relative p-6 pt-0">
+                {generatedSchema ? (() => {
+                  // Simple SQL to React Flow parser
+                  const nodes: any[] = [];
+                  const edges: any[] = [];
+                  const tableRegex = /CREATE TABLE\s+(?:IF NOT EXISTS\s+)?([a-zA-Z0-9_]+)\s*\(([\s\S]*?)\);/gi;
+                  let match;
+                  let yOffset = 50;
+                  let xOffset = 50;
+                  
+                  // Reset regex state
+                  tableRegex.lastIndex = 0;
+                  
+                  while ((match = tableRegex.exec(generatedSchema)) !== null) {
+                    const tableName = match[1];
+                    const columnsRaw = match[2].split(/\n|,/).map(c => c.trim()).filter(c => c && !c.startsWith('--'));
+                    const columns = columnsRaw.map(c => c.split(' ')[0]).filter(c => c && !c.includes('PRIMARY') && !c.includes('FOREIGN'));
+                    
+                    nodes.push({
+                      id: tableName,
+                      position: { x: xOffset, y: yOffset },
+                      data: { 
+                        label: (
+                          <div className="text-left font-sans">
+                            <div className="font-bold text-sm border-b border-white/10 pb-1 mb-1 text-blue-400">{tableName}</div>
+                            <div className="text-xs text-gray-400 max-h-32 overflow-y-auto no-scrollbar">
+                              {columns.map((c, i) => <div key={i}>{c}</div>)}
+                            </div>
+                          </div>
+                        ) 
+                      },
+                      style: { background: '#09090b', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', minWidth: '180px' }
+                    });
+                    
+                    xOffset += 240;
+                    if (xOffset > 700) { xOffset = 50; yOffset += 180; }
+                  }
+
+                  if (nodes.length > 0) {
+                    return (
+                      <ReactFlow nodes={nodes} edges={edges} fitView>
+                        <Background color="#333" gap={16} />
+                        <Controls />
+                      </ReactFlow>
+                    );
+                  }
+                  
+                  return (
+                    <pre className="text-gray-300 h-full overflow-y-auto">
+                      <code dangerouslySetInnerHTML={{ __html: generatedSchema }} />
+                    </pre>
+                  );
+                })() : (
+                  <pre className="text-gray-300">
+                    <code>-- Waiting for Schema generation...</code>
+                  </pre>
+                )}
+              </div>
             </div>
           )}
 
@@ -987,6 +1098,104 @@ export const nova = {
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setShowSaveModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-semibold">Cancel</button>
                   <button onClick={confirmSaveProject} className="flex-1 px-4 py-2.5 rounded-xl bg-purple-600 text-white hover:bg-purple-500 transition-colors font-semibold shadow-lg shadow-purple-500/20">Save Project</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090b] border border-white/10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Settings className="w-5 h-5 text-gray-400" /> Project Settings</h3>
+                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2 block">Target Platform</label>
+                  <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl">
+                    <button 
+                      onClick={() => setTargetPlatform('web')}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${targetPlatform === 'web' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      Web (React)
+                    </button>
+                    <button 
+                      onClick={() => setTargetPlatform('mobile')}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${targetPlatform === 'mobile' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      Mobile (React Native)
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2 block">Brand Context & Design Tokens</label>
+                  <textarea 
+                    value={brandContext}
+                    onChange={(e) => setBrandContext(e.target.value)}
+                    className="w-full h-32 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-indigo-500/50 text-white text-sm resize-none"
+                    placeholder="e.g., Use primary color #C29D7D, secondary #3E2723. Tone is luxurious, minimalist. Font: 'Inter'..."
+                  />
+                  <p className="text-xs text-gray-500 mt-2">These instructions are automatically appended to all AI code generations to maintain consistent branding.</p>
+                </div>
+                <div className="pt-2">
+                  <button onClick={() => setShowSettingsModal(false)} className="w-full px-4 py-3 rounded-xl bg-white text-black hover:bg-gray-200 transition-colors font-semibold shadow-lg">Save Settings</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* GitHub Push Modal */}
+      <AnimatePresence>
+        {showGithubModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090b] border border-white/10 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl flex flex-col pt-2"
+            >
+              <div className="p-4 flex items-center justify-between border-b border-white/10">
+                <h3 className="font-bold text-white text-lg flex items-center gap-2"><Upload className="w-5 h-5 text-white" /> Push to GitHub</h3>
+              </div>
+              <div className="p-4 pb-6 space-y-4">
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2 block">Repository Name</label>
+                  <input 
+                    type="text" 
+                    value={githubRepoName}
+                    onChange={(e) => setGithubRepoName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gray-500 text-white"
+                    placeholder="my-nova-app"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2 block">GitHub PAT Token</label>
+                  <input 
+                    type="password" 
+                    value={githubToken}
+                    onChange={(e) => setGithubToken(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gray-500 text-white"
+                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Requires 'repo' scope.</p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowGithubModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-semibold">Cancel</button>
+                  <button onClick={confirmPushGithub} className="flex-1 px-4 py-2.5 rounded-xl bg-white text-black hover:bg-gray-200 transition-colors font-semibold shadow-lg shadow-white/20">Push Repo</button>
                 </div>
               </div>
             </motion.div>

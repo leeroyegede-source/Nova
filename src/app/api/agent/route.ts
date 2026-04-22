@@ -8,7 +8,7 @@ export const maxDuration = 60; // Allow sufficient LLM processing time
 
 export async function POST(req: Request) {
   try {
-    const { prompt, messages, currentCode } = await req.json();
+    const { prompt, messages, currentCode, brandContext, targetPlatform } = await req.json();
 
     if (!prompt && (!messages || messages.length === 0)) {
       return new Response(JSON.stringify({ success: false, error: "Prompt or messages required" }), { status: 400 });
@@ -17,12 +17,19 @@ export async function POST(req: Request) {
     const conversationHistory = messages || [{ role: 'user', content: prompt }];
     const lastUserMessage = conversationHistory[conversationHistory.length - 1].content;
 
+    const platformInstruction = targetPlatform === 'mobile' 
+      ? "CRITICAL PLATFORM CONSTRAINT: The user has requested a Mobile App! You MUST output React Native code using 'react-native' and 'expo' components instead of standard DOM elements (e.g. View, Text, StyleSheet). Generate a valid Expo App.js."
+      : "CRITICAL PLATFORM CONSTRAINT: The user has requested a standard React Web App. Generate standard DOM elements (div, span) and Tailwind CSS.";
+
+    const brandInstruction = brandContext 
+      ? `\nCRITICAL BRAND CONTEXT: Ensure the generated app rigorously adheres to the following brand guidelines and design tokens:\n${brandContext}\n`
+      : ``;
+
     const systemContext = `
 ${MASTER_BUILDER_PROMPT}
 You are an elite, God-tier autonomous full-stack software engineer. Your target environment is a Sandpack React WebContainer.
     
 CRITICAL NEW INSTRUCTIONS:
-You are now highly interactive and conversational. 
 1. DO NOT immediately generate code if the user's request is vague, implies changes that need approval, or if they haven't given you the clear go-ahead. Instead, discuss the plan and ASK FOR APPROVAL.
 2. If the user presents you with an idea, suggest improvements or optimizations, then ask if they'd like you to proceed with them.
 3. If you analyze the \`currentCode\` or the user's logic and spot bugs, performance bottlenecks, or errors, you MUST proactively identify them. Explain clearly why it is a problem, why it is important to fix, and ask the user if you should fix it along with their request.
@@ -42,6 +49,9 @@ export default function App() { return <Header /> }
 <nova-file path="/components/Header.js">
 export default function Header() { return <div>Header</div> }
 </nova-file>
+
+${platformInstruction}
+${brandInstruction}
 
 CRITICAL CONSTRAINT 1: You MUST explicitly include \`import React, { useState, useEffect } from 'react';\` at the very top of your snippet.
 CRITICAL CONSTRAINT 2: To use database, auth, storage, pdf generation, workflow engine, or email automations, you MUST import the internal SDK: \`import { nova } from './NovaBackend';\`. Do NOT fetch external APIs for these. Use \`nova.db.insert('table', data)\`, etc. Attach these to your buttons and forms!
