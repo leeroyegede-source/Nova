@@ -45,7 +45,7 @@ export default function Playground() {
   const [isBuilding, setIsBuilding] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database' | 'assets'>('preview');
   const [sandboxView, setSandboxView] = useState<'preview' | 'code'>('preview');
-  const [previewEngine, setPreviewEngine] = useState<'sandpack' | 'database'>('sandpack');
+  const [previewEngine, setPreviewEngine] = useState<'sandpack' | 'database'>('database');
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [projectAssets, setProjectAssets] = useState<{name: string, dataUrl: string}[]>([]);
   const [searchTemplate, setSearchTemplate] = useState("");
