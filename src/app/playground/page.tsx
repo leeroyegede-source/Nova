@@ -6,7 +6,7 @@ import {
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
   Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload,
-  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug, MessageSquare, Workflow, Briefcase, ShieldCheck
+  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug, MessageSquare, Workflow, Briefcase, ShieldCheck, Key
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -597,6 +597,16 @@ export const nova = {
 `
   };
 
+  const handleApiKeyIntegration = () => {
+    const functionName = window.prompt("What specific function do you want this 3rd-Party API to perform? (e.g. 'Fetch live weather data', 'Send an SMS', 'Generate a PDF')");
+    if (!functionName) return;
+    
+    const apiKey = window.prompt("Enter the API Key (or leave blank to let the AI use a placeholder):") || "YOUR_API_KEY_HERE";
+    
+    handlePromptSubmit(`I need to integrate a 3rd-party API into the backend to execute this specific function: "${functionName}". 
+Please stub out a backend API route and a frontend component. Securely use the following API Key in the server-side logic: ${apiKey}. Ensure the frontend has a button to trigger this API route and display the result.`);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-black">
       {/* Playground Header */}
@@ -662,6 +672,9 @@ export const nova = {
                 </button>
                 <button onClick={() => handlePromptSubmit("Build a 3rd-Party App Integrator module to connect to external webhooks and OAuth providers.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
                   <Plug className="w-4 h-4 text-yellow-400" /> 3rd-Party Integrator
+                </button>
+                <button onClick={handleApiKeyIntegration} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Key className="w-4 h-4 text-pink-400" /> API Key Integration
                 </button>
                 <div className="h-px bg-white/10 my-1"></div>
                 <button onClick={() => handlePromptSubmit("Add a Chat Agent interface and backend logic to allow users to converse with an AI model.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
