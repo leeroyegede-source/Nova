@@ -923,7 +923,8 @@ export const nova = {
                 </div>
               </div>
               <div className="flex-1 w-full h-full relative p-6 pt-0">
-                {generatedSchema ? (() => {
+                {(generatedFiles["/schema.sql"] || generatedFiles["schema.sql"] || generatedSchema) ? (() => {
+                  const schemaSource = generatedFiles["/schema.sql"] || generatedFiles["schema.sql"] || generatedSchema;
                   // Simple SQL to React Flow parser
                   const nodes: any[] = [];
                   const edges: any[] = [];
@@ -935,7 +936,7 @@ export const nova = {
                   // Reset regex state
                   tableRegex.lastIndex = 0;
                   
-                  while ((match = tableRegex.exec(generatedSchema)) !== null) {
+                  while ((match = tableRegex.exec(schemaSource)) !== null) {
                     const tableName = match[1];
                     const columnsRaw = match[2].split(/\n|,/).map(c => c.trim()).filter(c => c && !c.startsWith('--'));
                     const columns = columnsRaw.map(c => c.split(' ')[0]).filter(c => c && !c.includes('PRIMARY') && !c.includes('FOREIGN'));
@@ -971,7 +972,7 @@ export const nova = {
                   
                   return (
                     <pre className="text-gray-300 h-full overflow-y-auto">
-                      <code dangerouslySetInnerHTML={{ __html: generatedSchema }} />
+                      <code dangerouslySetInnerHTML={{ __html: schemaSource }} />
                     </pre>
                   );
                 })() : (
