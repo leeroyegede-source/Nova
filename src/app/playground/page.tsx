@@ -6,7 +6,7 @@ import {
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
   Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload,
-  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug
+  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug, MessageSquare, Workflow, Briefcase, ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -662,6 +662,19 @@ export const nova = {
                 </button>
                 <button onClick={() => handlePromptSubmit("Build a 3rd-Party App Integrator module to connect to external webhooks and OAuth providers.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
                   <Plug className="w-4 h-4 text-yellow-400" /> 3rd-Party Integrator
+                </button>
+                <div className="h-px bg-white/10 my-1"></div>
+                <button onClick={() => handlePromptSubmit("Add a Chat Agent interface and backend logic to allow users to converse with an AI model.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <MessageSquare className="w-4 h-4 text-blue-300" /> Chat Agent
+                </button>
+                <button onClick={() => handlePromptSubmit("Add a Workflow Agent logic to autonomously execute multi-step background tasks.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Workflow className="w-4 h-4 text-orange-400" /> Workflow Agent
+                </button>
+                <button onClick={() => handlePromptSubmit("Add a Management Agent logic to orchestrate other sub-agents and handle high-level routing.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Briefcase className="w-4 h-4 text-indigo-400" /> Management Agent
+                </button>
+                <button onClick={() => handlePromptSubmit("Add a Verification Agent logic to autonomously validate user inputs and perform quality assurance.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <ShieldCheck className="w-4 h-4 text-green-400" /> Verification Agent
                 </button>
               </div>
             </div>
