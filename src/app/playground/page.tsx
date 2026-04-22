@@ -13,6 +13,7 @@ import { TEMPLATE_REGISTRY } from "@/lib/templates";
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import EsbuildPreview from "@/components/EsbuildPreview";
+import DatabasePreview from "@/components/DatabasePreview";
 
 // Mock AI simulation delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -45,7 +46,7 @@ export default function Playground() {
   const [isBuilding, setIsBuilding] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'database' | 'assets'>('preview');
   const [sandboxView, setSandboxView] = useState<'preview' | 'code'>('preview');
-  const [previewEngine, setPreviewEngine] = useState<'sandpack' | 'nova'>('sandpack');
+  const [previewEngine, setPreviewEngine] = useState<'sandpack' | 'nova' | 'database'>('sandpack');
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [projectAssets, setProjectAssets] = useState<{name: string, dataUrl: string}[]>([]);
   const [searchTemplate, setSearchTemplate] = useState("");
@@ -657,6 +658,10 @@ export default function Playground() {
                     onClick={() => setPreviewEngine('nova')}
                     className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${previewEngine === 'nova' ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-white'}`}
                   >Nova Engine</button>
+                  <button 
+                    onClick={() => setPreviewEngine('database')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${previewEngine === 'database' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >Supabase DB</button>
                 </div>
                 
                 <div className="flex bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-xl">
@@ -809,7 +814,6 @@ export const nova = {
 };
 `
                       }}
-                    >
                       {previewEngine === 'sandpack' ? (
                         <SandpackLayout className="h-full w-full !rounded-none !border-none relative">
                           <SandpackAutoHealer isBuilding={isBuilding} onHealTrigger={(msg) => handlePromptSubmit(msg)} />
@@ -826,7 +830,11 @@ export const nova = {
                             <SandpackCodeEditor style={{ height: '100%' }} showLineNumbers={true} showTabs={true} />
                           </div>
                           <div className={`absolute inset-0 z-0 ${sandboxView === 'preview' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-                            <EsbuildPreview files={generatedFiles} className="h-full w-full" />
+                            {previewEngine === 'nova' ? (
+                               <EsbuildPreview files={generatedFiles} className="h-full w-full" />
+                            ) : (
+                               <DatabasePreview files={generatedFiles} className="h-full w-full" />
+                            )}
                           </div>
                         </div>
                       )}
