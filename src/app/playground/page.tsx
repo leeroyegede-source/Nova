@@ -6,7 +6,7 @@ import {
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
   Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload,
-  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug, MessageSquare, Workflow, Briefcase, ShieldCheck, Key
+  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug, MessageSquare, Workflow, Briefcase, ShieldCheck, Key, Webhook
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -607,6 +607,18 @@ export const nova = {
 Please stub out a backend API route and a frontend component. Securely use the following API Key in the server-side logic: ${apiKey}. Ensure the frontend has a button to trigger this API route and display the result.`);
   };
 
+  const handleWebhookIntegration = () => {
+    const payloadSpecs = window.prompt("What data/payload will this Webhook receive? (e.g., 'Stripe payment success event with customer email and amount', 'GitHub push event data')");
+    if (!payloadSpecs) return;
+    
+    const actions = window.prompt("What should the backend do when it receives this data? (e.g., 'Update the user database', 'Send an email confirmation')");
+    
+    handlePromptSubmit(`I need to set up a secure Webhook Receiver API route. 
+The webhook will receive the following payload: "${payloadSpecs}".
+When the payload is received and validated, the backend should execute the following logic: "${actions || 'Log the data to the console'}".
+Please generate the backend API route for this webhook and any necessary database schema updates.`);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-black">
       {/* Playground Header */}
@@ -675,6 +687,9 @@ Please stub out a backend API route and a frontend component. Securely use the f
                 </button>
                 <button onClick={handleApiKeyIntegration} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
                   <Key className="w-4 h-4 text-pink-400" /> API Key Integration
+                </button>
+                <button onClick={handleWebhookIntegration} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Webhook className="w-4 h-4 text-cyan-400" /> Webhook Receiver Setup
                 </button>
                 <div className="h-px bg-white/10 my-1"></div>
                 <button onClick={() => handlePromptSubmit("Add a Chat Agent interface and backend logic to allow users to converse with an AI model.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
