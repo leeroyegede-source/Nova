@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
-  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload
+  Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload,
+  Wand2, Lock, CreditCard, Moon, MoreVertical
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -599,97 +600,115 @@ export const nova = {
   return (
     <div className="flex flex-col h-screen bg-black">
       {/* Playground Header */}
-      <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md z-10 shrink-0">
+      <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-[#09090b]/80 backdrop-blur-xl z-30 shrink-0 sticky top-0">
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <ChevronRight className="w-5 h-5 rotate-180" />
           </Link>
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-tr from-blue-600 to-purple-600 p-1.5 rounded-md">
+            <div className="bg-gradient-to-tr from-blue-600 to-purple-600 p-1.5 rounded-md shadow-lg shadow-purple-500/20">
               <Terminal className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-white">Nova OS Playground</span>
+            <span className="font-bold text-white tracking-tight hidden md:inline">Nova OS</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex overflow-x-auto md:overflow-visible max-w-[55vw] md:max-w-none bg-white/5 border border-white/10 rounded-lg p-1 space-x-1 hide-scrollbar">
+        {/* Center Tabs */}
+        <div className="flex overflow-x-auto md:overflow-visible bg-white/5 border border-white/10 rounded-lg p-1 space-x-1 hide-scrollbar">
             <button 
               onClick={() => { setActiveTab('preview'); setSandboxView('preview'); }}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'preview' && sandboxView === 'preview' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${activeTab === 'preview' && sandboxView === 'preview' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
             >
               <div className="flex items-center gap-2"><Play className="w-4 h-4" /> Preview</div>
             </button>
             <button 
               onClick={() => { setActiveTab('preview'); setSandboxView('code'); }}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'preview' && sandboxView === 'code' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${activeTab === 'preview' && sandboxView === 'code' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
             >
               <div className="flex items-center gap-2"><Code2 className="w-4 h-4" /> Code</div>
             </button>
             <button 
               onClick={() => setActiveTab('database')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'database' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${activeTab === 'database' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
             >
               <div className="flex items-center gap-2"><Database className="w-4 h-4" /> Schema</div>
             </button>
             <button 
               onClick={() => setActiveTab('assets')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'assets' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${activeTab === 'assets' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
             >
               <div className="flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Assets</div>
             </button>
-            <button 
-              onClick={handleDownload}
-              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-500 text-white shadow shadow-blue-500/20`}
-            >
-              <div className="flex items-center gap-2"><Download className="w-4 h-4" /> Export Code</div>
-            </button>
-            <button 
-              onClick={() => setShowProjectsModal(true)}
-              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10 hover:bg-white/10 text-white shadow`}
-            >
-              <div className="flex items-center gap-2"><FolderOpen className="w-4 h-4" /> Load</div>
-            </button>
-            <button 
-              onClick={handleSaveProjectClick}
-              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-purple-600 hover:bg-purple-500 text-white shadow shadow-purple-500/20`}
-            >
-              <div className="flex items-center gap-2"><Save className="w-4 h-4" /> Save</div>
-            </button>
-            <button 
-              onClick={handleClearProject}
-              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 text-red-200 shadow`}
-            >
-              <div className="flex items-center gap-2"><Trash2 className="w-4 h-4" /> Clear</div>
-            </button>
-            <button 
-              onClick={handleDeployVercel}
-              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-white hover:bg-gray-200 text-black shadow shadow-white/20`}
-            >
-              <div className="flex items-center gap-2 font-bold tracking-tight">▲ Deploy to Vercel</div>
-            </button>
-            <button 
-              onClick={() => {
-                if (Object.keys(generatedFiles).length === 0) {
-                  setMessages(prev => [...prev, { role: 'agent', content: "⚠️ **Push Error:** No active code architecture was found in the IDE workspace!"}]);
-                  return;
-                }
-                setGithubRepoName(`nova-app-${Date.now().toString().slice(-4)}`);
-                setShowGithubModal(true);
-              }}
-              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-gray-800 hover:bg-gray-700 text-white shadow border border-white/20`}
-            >
-              <div className="flex items-center gap-2 font-bold tracking-tight"><Upload className="w-4 h-4" /> Push to GitHub</div>
-            </button>
-            <button 
-              onClick={() => setShowSettingsModal(true)}
-              className={`ml-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10 hover:bg-white/10 text-white shadow`}
-            >
-              <div className="flex items-center gap-2"><Settings className="w-4 h-4" /> Settings</div>
-            </button>
-          </div>
+        </div>
+        
+        {/* Right Actions */}
+        <div className="flex items-center gap-3">
           
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-sm font-bold shadow-lg shadow-purple-500/20">
+          {/* Magic Tools Dropdown */}
+          <div className="relative group">
+            <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+              <Wand2 className="w-4 h-4" /> Magic Tools
+            </button>
+            <div className="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
+              <div className="bg-[#12121a] border border-white/10 rounded-xl shadow-2xl p-2 flex flex-col gap-1 backdrop-blur-xl">
+                <button onClick={() => handlePromptSubmit("Implement robust user authentication (Login/Signup/Signout) into the current app architecture.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Lock className="w-4 h-4 text-blue-400" /> Add Authentication
+                </button>
+                <button onClick={() => handlePromptSubmit("Integrate a Stripe payment checkout flow or pricing tier component into the app.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <CreditCard className="w-4 h-4 text-purple-400" /> Stripe Payments
+                </button>
+                <button onClick={() => handlePromptSubmit("Add smooth framer-motion entrance and hover animations to all main UI elements.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Sparkles className="w-4 h-4 text-yellow-400" /> Add Animations
+                </button>
+                <button onClick={() => handlePromptSubmit("Implement a dark/light mode theme toggle using Tailwind classes.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Moon className="w-4 h-4 text-gray-400" /> Dark Mode
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions Dropdown */}
+          <div className="relative group">
+            <button className="flex items-center justify-center w-9 h-9 rounded-lg text-sm font-semibold transition-all bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 shadow-lg">
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            <div className="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
+              <div className="bg-[#12121a] border border-white/10 rounded-xl shadow-2xl p-2 flex flex-col gap-1 backdrop-blur-xl">
+                <button onClick={handleDeployVercel} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left text-sm font-semibold text-white transition-colors">
+                  <span className="text-white text-lg leading-none">▲</span> Deploy to Vercel
+                </button>
+                <button onClick={() => {
+                  if (Object.keys(generatedFiles).length === 0) {
+                    setMessages(prev => [...prev, { role: 'agent', content: "⚠️ **Push Error:** No active code architecture was found in the IDE workspace!"}]);
+                    return;
+                  }
+                  setGithubRepoName(`nova-app-${Date.now().toString().slice(-4)}`);
+                  setShowGithubModal(true);
+                }} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Upload className="w-4 h-4 text-gray-400" /> Push to GitHub
+                </button>
+                <div className="h-px bg-white/10 my-1"></div>
+                <button onClick={handleDownload} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Download className="w-4 h-4 text-gray-400" /> Export ZIP
+                </button>
+                <button onClick={() => setShowProjectsModal(true)} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <FolderOpen className="w-4 h-4 text-gray-400" /> Load Project
+                </button>
+                <button onClick={handleSaveProjectClick} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Save className="w-4 h-4 text-gray-400" /> Save Project
+                </button>
+                <button onClick={() => setShowSettingsModal(true)} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Settings className="w-4 h-4 text-gray-400" /> Settings
+                </button>
+                <div className="h-px bg-white/10 my-1"></div>
+                <button onClick={handleClearProject} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-left text-sm text-red-400 transition-colors">
+                  <Trash2 className="w-4 h-4" /> Clear Workspace
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-sm font-bold shadow-lg shadow-purple-500/20 ml-2 border border-white/20">
             N
           </div>
         </div>
