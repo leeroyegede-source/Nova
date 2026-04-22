@@ -54,12 +54,12 @@ export async function POST(req: Request) {
               if (args.path === 'index.js') {
                 return {
                   contents: `
-                    import React from 'https://esm.sh/react@18';
-                    import { createRoot } from 'https://esm.sh/react-dom@18/client';
+                    import React from 'https://esm.sh/react@18?deps=react@18,react-dom@18';
+                    import { createRoot } from 'https://esm.sh/react-dom@18/client?deps=react@18,react-dom@18';
                     import App from './App.js';
                     
                     const root = createRoot(document.getElementById('root'));
-                    root.render(React.createElement(App));
+                    root.render(React.createElement(App.default || App));
                   `,
                   loader: 'jsx'
                 };
