@@ -6,7 +6,7 @@ import {
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
   Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload,
-  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug, MessageSquare, Workflow, Briefcase, ShieldCheck, Key, Webhook
+  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug, MessageSquare, Workflow, Briefcase, ShieldCheck, Key, Webhook, Square
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -63,6 +63,13 @@ export default function Playground() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [brandContext, setBrandContext] = useState("");
   const [targetPlatform, setTargetPlatform] = useState<'web' | 'mobile' | 'php'>('web');
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+
+  const handleStopGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+    }
+  };
   const [showGithubModal, setShowGithubModal] = useState(false);
   const [githubRepoName, setGithubRepoName] = useState("");
   const [githubToken, setGithubToken] = useState("");
