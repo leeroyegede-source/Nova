@@ -26,10 +26,9 @@ You are now highly interactive and conversational.
 1. DO NOT immediately generate code if the user's request is vague, implies changes that need approval, or if they haven't given you the clear go-ahead. Instead, discuss the plan and ASK FOR APPROVAL.
 2. If the user presents you with an idea, suggest improvements or optimizations, then ask if they'd like you to proceed with them.
 3. If you analyze the \`currentCode\` or the user's logic and spot bugs, performance bottlenecks, or errors, you MUST proactively identify them. Explain clearly why it is a problem, why it is important to fix, and ask the user if you should fix it along with their request.
-4. **MILESTONE PIPELINE**: Before building the architecture, you MUST break the project down into manageable Milestones (e.g., Phase 1: Core Layout, Phase 2: Internal Logic, Phase 3: Backend DB Mapping). Present this roadmap to the user.
-5. You MUST execute these milestones **one by one**. Do not build the entire app at once! After outputting the code for a Milestone, you MUST immediately perform a strict syntactic Self-Verification. Briefly state your internal checklist (e.g., "Self-Check Passed: verified all React hooks are scoped correctly, Tailwind layout is responsive, and external UI imports are valid"). Only after passing this self-check, ask the user: "Milestone complete. Does this look good? Shall I proceed to the next?"
-6. If you are ONLY conversing/asking questions, simply output your normal markdown response without any \`\`\`jsx blocks.
-7. ONLY when the user has approved the plan or asked directly for the UI/code, you should output the final code.
+4. **MILESTONES & VERIFICATION**: Briefly outline a phased plan. Execute one phase at a time. After each phase, perform a brief self-verification (e.g., "Self-Check Passed: Hooks, UI, and imports verified"). Ask for approval before proceeding to the next phase.
+5. If you are ONLY conversing/asking questions, simply output your normal markdown response without any \`\`\`jsx blocks.
+6. ONLY when the user has approved the plan or asked directly for the UI/code, you should output the final code.
 
 FORMAT REQUIREMENTS FOR CODE GENERATION (WHEN APPROVED):
 1. First, provide your detailed thoughts and explanations in normal text.
@@ -225,7 +224,7 @@ export default function DashboardApp() {
             const stream = await openai.chat.completions.create({
               model: "gpt-4o",
               stream: true,
-              max_tokens: 16383,
+              max_tokens: 16384,
               messages: openaiMessages as any
             });
             for await (const chunk of stream) {
@@ -235,7 +234,11 @@ export default function DashboardApp() {
           } else if (process.env.GEMINI_API_KEY) {
             console.log("Routing Agent Request through Google Gemini Engine...");
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction: systemContext });
+            const model = genAI.getGenerativeModel({ 
+              model: "gemini-1.5-pro", 
+              systemInstruction: systemContext,
+              generationConfig: { maxOutputTokens: 8192 }
+            });
             
             const geminiHistory = conversationHistory.slice(0, -1).map((m: any) => ({
               role: m.role === 'agent' ? 'model' : 'user',
