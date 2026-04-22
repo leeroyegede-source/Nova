@@ -3,47 +3,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as esbuild from 'esbuild-wasm';
 
-let isInitialized = false;
-let initPromise: Promise<void> | null = null;
-
 export default function EsbuildPreview({ files, className = '' }: any) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState('');
 
-  // 1. Initialize esbuild
+  // Compile code when files change using lazy initialization
   useEffect(() => {
-    if (isInitialized) {
-      setIsReady(true);
-      return;
-    }
-
-    if (!initPromise) {
-      initPromise = esbuild.initialize({
-        worker: true,
-        wasmURL: 'https://unpkg.com/esbuild-wasm@0.20.2/esbuild.wasm'
-      }).then(() => {
-        isInitialized = true;
-      }).catch((err) => {
-        if (err.message.includes('Cannot call "initialize" more than once') || err.message.includes('multiple times')) {
-          isInitialized = true;
-        } else {
-          console.error("Esbuild initialization error:", err);
-        }
-      });
-    }
-
-    initPromise.then(() => setIsReady(true));
-  }, []);
-
-  // 2. Compile code when files change
-  useEffect(() => {
-    if (!isReady || !files) return;
+    if (!files) return;
 
     const compile = async () => {
       setError('');
-      try {
-        const result = await esbuild.build({
+      setIsReady(false);
+      
+      const doBuild = async () => {
+        return await esbuild.build({
           entryPoints: ['App.js'],
           bundle: true,
           write: false,
@@ -52,19 +26,18 @@ export default function EsbuildPreview({ files, className = '' }: any) {
             {
               name: 'virtual-fs',
               setup(build) {
-                // Resolve virtual files
                 build.onResolve({ filter: /.*/ }, (args) => {
                   if (args.path === 'App.js') return { path: args.path, namespace: 'virtual' };
                   
-                  // Handle relative imports matching our files
                   let relativePath = args.path.replace('./', '').replace('../', '');
-                  if (!relativePath.endsWith('.js')) relativePath += '.js';
+                  if (!relativePath.endsWith('.js') && !relativePath.endsWith('.tsx') && !relativePath.endsWith('.css')) {
+                      relativePath += '.js';
+                  }
                   
-                  if (files[relativePath]) {
+                  if (files[relativePath] || files[`/${relativePath}`]) {
                     return { path: relativePath, namespace: 'virtual' };
                   }
                   
-                  // Handle npm packages by redirecting to esm.sh
                   if (!args.path.startsWith('.')) {
                     return { path: `https://esm.sh/${args.path}`, external: true };
                   }
@@ -72,13 +45,12 @@ export default function EsbuildPreview({ files, className = '' }: any) {
                   return { path: args.path, namespace: 'virtual' };
                 });
 
-                // Load virtual files
                 build.onLoad({ filter: /.*/, namespace: 'virtual' }, (args) => {
                   const content = files[args.path] || files[`/${args.path}`];
                   if (content) {
                     return {
                       contents: content,
-                      loader: 'jsx',
+                      loader: args.path.endsWith('.css') ? 'css' : 'jsx',
                     };
                   }
                 });
@@ -86,10 +58,35 @@ export default function EsbuildPreview({ files, className = '' }: any) {
             }
           ]
         });
+      };
+
+      try {
+        let result;
+        try {
+          result = await doBuild();
+        } catch (err: any) {
+          if (err.message.includes('You need to call "initialize"') || err.message.includes('not initialized')) {
+            // Lazy initialize esbuild
+            try {
+              await esbuild.initialize({
+                worker: false,
+                wasmURL: 'https://unpkg.com/esbuild-wasm@0.20.2/esbuild.wasm'
+              });
+            } catch (initErr: any) {
+              if (!initErr.message.includes('multiple times') && !initErr.message.includes('more than once')) {
+                throw initErr;
+              }
+            }
+            // Retry build
+            result = await doBuild();
+          } else {
+            throw err;
+          }
+        }
 
         const bundledCode = result.outputFiles[0].text;
+        setIsReady(true);
 
-        // 3. Update iframe
         if (iframeRef.current) {
           const html = `
             <html>
@@ -108,7 +105,7 @@ export default function EsbuildPreview({ files, className = '' }: any) {
                     const root = createRoot(document.getElementById('root'));
                     root.render(React.createElement(App.default || App));
                   } catch (err) {
-                    document.body.innerHTML = '<div style="color:red;padding:20px;">' + err.message + '</div>';
+                    document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">Runtime Error: ' + err.message + '</div>';
                   }
                 </script>
               </body>
@@ -117,20 +114,22 @@ export default function EsbuildPreview({ files, className = '' }: any) {
           iframeRef.current.srcdoc = html;
         }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error("Compilation error", err);
         setError(err.message);
+        setIsReady(true);
       }
     };
 
     compile();
-  }, [files, isReady]);
+  }, [files]);
 
   return (
     <div className={`relative w-full h-full bg-white flex items-center justify-center ${className}`}>
-      {!isReady && <div className="absolute text-gray-400">Initializing Core Engine...</div>}
+      {!isReady && !error && <div className="absolute text-gray-400 font-mono text-sm z-50">Initializing Core Engine...</div>}
       {error && (
-        <div className="absolute top-0 left-0 w-full p-4 bg-red-500/10 text-red-500 font-mono text-xs overflow-auto max-h-[50%] z-50">
+        <div className="absolute top-0 left-0 w-full p-4 bg-red-500/10 text-red-500 font-mono text-xs overflow-auto max-h-[50%] z-50 border-b border-red-500/20 shadow-xl backdrop-blur-sm">
+          <strong>Build Error:</strong><br />
           {error}
         </div>
       )}
