@@ -62,7 +62,7 @@ export default function Playground() {
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [brandContext, setBrandContext] = useState("");
-  const [targetPlatform, setTargetPlatform] = useState<'web' | 'mobile'>('web');
+  const [targetPlatform, setTargetPlatform] = useState<'web' | 'mobile' | 'php'>('web');
   const [showGithubModal, setShowGithubModal] = useState(false);
   const [githubRepoName, setGithubRepoName] = useState("");
   const [githubToken, setGithubToken] = useState("");
@@ -1392,6 +1392,12 @@ export const nova = {
                       className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${targetPlatform === 'mobile' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                     >
                       Mobile (React Native)
+                    </button>
+                    <button 
+                      onClick={() => setTargetPlatform('php')}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${targetPlatform === 'php' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      Web (PHP)
                     </button>
                   </div>
                 </div>

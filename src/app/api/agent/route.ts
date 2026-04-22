@@ -19,6 +19,8 @@ export async function POST(req: Request) {
 
     const platformInstruction = targetPlatform === 'mobile' 
       ? "CRITICAL PLATFORM CONSTRAINT: The user has requested a Mobile App! You MUST output React Native code using 'react-native' and 'expo' components instead of standard DOM elements (e.g. View, Text, StyleSheet). Generate a valid Expo App.js."
+      : targetPlatform === 'php'
+      ? "CRITICAL PLATFORM CONSTRAINT: The user has requested a PHP Web App. Generate standard PHP files (index.php, etc.) with inline HTML/Tailwind CSS. Do NOT generate React code. Output PHP code instead."
       : "CRITICAL PLATFORM CONSTRAINT: The user has requested a standard React Web App. Generate standard DOM elements (div, span) and Tailwind CSS.";
 
     const brandInstruction = brandContext 
