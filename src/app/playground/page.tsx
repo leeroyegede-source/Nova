@@ -173,7 +173,7 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      
       
       setMessages(prev => [...prev, { role: 'agent', content: `✅ **Download Successful!** Your code has been downloaded as a ZIP file.` }]);
     } catch (e: any) {
@@ -455,11 +455,11 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_\${Date.now()}.zip`;
+      a.download = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      
     } catch (e: any) {
       alert(`Download Failed: ${e.message}`);
     }
