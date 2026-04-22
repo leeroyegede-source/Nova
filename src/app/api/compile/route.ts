@@ -28,7 +28,7 @@ export async function POST(req: Request) {
               if (args.path.startsWith('http://') || args.path.startsWith('https://')) {
                 return { path: args.path, external: true };
               }
-              if (args.path === 'react' || args.path === 'react-dom' || args.path === 'react-dom/client') {
+              if (args.path === 'react' || args.path === 'react-dom' || args.path === 'react-dom/client' || args.path === 'react/jsx-runtime' || args.path === 'react/jsx-dev-runtime') {
                 return { path: args.path, external: true };
               }
               
@@ -112,7 +112,9 @@ export async function POST(req: Request) {
               "imports": {
                 "react": "https://esm.sh/react@18.2.0",
                 "react-dom": "https://esm.sh/react-dom@18.2.0",
-                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+                "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+                "react/jsx-dev-runtime": "https://esm.sh/react@18.2.0/jsx-dev-runtime"
               }
             }
           </script>
