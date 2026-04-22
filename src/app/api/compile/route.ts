@@ -38,13 +38,12 @@ export async function POST(req: Request) {
               if (args.path.startsWith('http://') || args.path.startsWith('https://')) {
                 return { path: args.path, external: true };
               }
+              if (args.path === 'react' || args.path === 'react-dom' || args.path === 'react-dom/client') {
+                return { path: args.path, external: true };
+              }
+              
               if (!args.path.startsWith('.')) {
-                let pkg = args.path;
-                if (pkg === 'react') pkg = 'react@18';
-                if (pkg === 'react-dom' || pkg === 'react-dom/client') pkg = 'react-dom@18/client';
-                if (pkg === 'react-dom/server') pkg = 'react-dom@18/server';
-                
-                return { path: `https://esm.sh/${pkg}?deps=react@18,react-dom@18`, external: true };
+                return { path: `https://esm.sh/${args.path}?external=react,react-dom`, external: true };
               }
               
               return { path: args.path, namespace: 'virtual' };
@@ -54,8 +53,8 @@ export async function POST(req: Request) {
               if (args.path === 'index.js') {
                 return {
                   contents: `
-                    import React from 'https://esm.sh/react@18?deps=react@18,react-dom@18';
-                    import { createRoot } from 'https://esm.sh/react-dom@18/client?deps=react@18,react-dom@18';
+                    import React from 'react';
+                    import { createRoot } from 'react-dom/client';
                     import App from './App.js';
                     
                     const root = createRoot(document.getElementById('root'));
@@ -88,6 +87,15 @@ export async function POST(req: Request) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <script src="https://cdn.tailwindcss.com"></script>
           <style>body { margin: 0; padding: 0; }</style>
+          <script type="importmap">
+            {
+              "imports": {
+                "react": "https://esm.sh/react@18.2.0",
+                "react-dom": "https://esm.sh/react-dom@18.2.0",
+                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+              }
+            }
+          </script>
         </head>
         <body>
           <div id="root"></div>
