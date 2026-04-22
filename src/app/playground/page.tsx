@@ -351,10 +351,13 @@ export default function Playground() {
       }
 
       if (Object.keys(finalFiles).length > 0 && isCodeFullyClosed) {
-        setGeneratedFiles(finalFiles);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('nova_saved_project_files', JSON.stringify(finalFiles));
-        }
+        setGeneratedFiles(prev => {
+          const merged = { ...prev, ...finalFiles };
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('nova_saved_project_files', JSON.stringify(merged));
+          }
+          return merged;
+        });
         setMessages(prev => {
            const newMess = [...prev];
            newMess[newMess.length - 1].content += "\n\n✅ **Done! The multi-file workspace has been updated.**";
@@ -373,7 +376,7 @@ export default function Playground() {
         // or just returned plain text, maybe it thinks it's pure code.
         const cleaned = fullText.trim();
         if (cleaned.includes('import React') || cleaned.includes('export default')) {
-           setGeneratedFiles({ "/App.js": cleaned });
+           setGeneratedFiles(prev => ({ ...prev, "/App.js": cleaned }));
            setShowPreview(true);
         }
       }

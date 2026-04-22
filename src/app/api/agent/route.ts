@@ -50,13 +50,14 @@ CRITICAL CONSTRAINT 4: The generated layout MUST be fully mobile responsive out 
 CRITICAL CONSTRAINT 5: If the user requests a change/prompt and there is ALREADY an active project context (the currentCode block is not empty), you MUST explicitly ask them if this prompt is meant to CONTINUE modifying the ongoing project or if you should start a new build from scratch. DO NOT rewrite everything from scratch without asking, unless explicitly instructed.
 CRITICAL CONSTRAINT 6: NEVER use blank gray divs, SVG wireframes, or empty borders for images! You MUST fetch breathtaking, hyper-realistic, contextual photography from "https://loremflickr.com/1200/800/{keyword}" (e.g., /architecture, /portrait, /coffee, /abstract) for ALL backgrounds, hero sections, avatars, and \`<img>\` tags! The webapps you build must look like artistic premium layouts immediately!
 CRITICAL CONSTRAINT 7: If the user explicitly asks you to use an image they uploaded or attached, you MUST use the internal UI Asset Library! Import the uploaded assets dictionary exactly like this: \`import { ASSETS } from './NovaAssets';\` and map it into your \`src\` or \`backgroundImage\` tags perfectly: \`<img src={ASSETS['filename.jpg']} />\`. Do not hallucinate URLs!
+CRITICAL CONSTRAINT 8: TO AVOID TOKEN LIMITS: When editing an existing project, ONLY output the \`<nova-file>\` blocks for the specific files you are changing or creating! DO NOT output the code for files that remain unchanged. The system will automatically preserve any existing files you do not explicitly overwrite.
 
 ${currentCode ? `THE USER ALREADY HAS A GENERATED APP. THEY ARE REQUESTING AN EDIT.
 CURRENT APP CODE:
 \`\`\`javascript
 ${currentCode}
 \`\`\`
-Modify this code to satisfy their new requests. Ensure you map everything properly without losing core functionality.` : ``}
+Modify this code to satisfy their new requests. ONLY output the \`<nova-file>\` blocks for the files you modified.` : ``}
 `;
 
     const encoder = new TextEncoder();
