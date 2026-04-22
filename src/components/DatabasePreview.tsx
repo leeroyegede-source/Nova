@@ -46,6 +46,9 @@ export default function DatabasePreview({ files, projectId, className = '', isBu
       } catch (err: any) {
         console.error("Database Playground Error:", err);
         setError(err.message);
+        if (onHealTrigger && !isBuilding) {
+           onHealTrigger(`[Automated Diagnostics]: The Database Preview encountered a build compilation error.\n\nError Trace:\n${err.message}\n\nAgent Instruction: Identify the syntax or module resolution error in your previous code. Fix the issue and regenerate the affected file.`);
+        }
       } finally {
         setIsCompiling(false);
       }
