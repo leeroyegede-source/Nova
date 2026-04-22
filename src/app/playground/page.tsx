@@ -496,9 +496,12 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
 
     try {
       const apiMessages = [...messages, { role: 'user', content: compiledMessage }];
+      const controller = new AbortController();
+      setAbortController(controller);
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ 
           messages: apiMessages, 
           currentCode: Object.keys(generatedFiles).length > 0 ? JSON.stringify(generatedFiles) : null,
@@ -610,9 +613,19 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
       }
 
       setIsBuilding(false);
+      setAbortController(null);
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: 'agent', content: `CRITICAL ERROR: ${e.message}` }]);
+      if (e.name === 'AbortError') {
+        setMessages(prev => {
+          const newMess = [...prev];
+          newMess[newMess.length - 1].content += "\n\n⚠️ **Generation Stopped by User**";
+          return newMess;
+        });
+      } else {
+        setMessages(prev => [...prev, { role: 'agent', content: `CRITICAL ERROR: ${e.message}` }]);
+      }
       setIsBuilding(false);
+      setAbortController(null);
     }
   };
 
@@ -976,13 +989,23 @@ export const nova = {
                   placeholder="Describe the app you want to build..."
                   className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 outline-none focus:border-blue-500/50 text-sm text-white resize-none h-20"
                 />
-                <button 
-                  onClick={handlePromptSubmit}
-                  disabled={(!prompt.trim() && uploadedFiles.length === 0) || isBuilding}
-                  className="absolute right-3 bottom-3 p-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+                {isBuilding ? (
+                  <button 
+                    onClick={handleStopGeneration}
+                    className="absolute right-3 bottom-3 p-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors shadow-lg shadow-red-500/20"
+                    title="Stop Generation"
+                  >
+                    <Square className="w-4 h-4" fill="currentColor" />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handlePromptSubmit}
+                    disabled={(!prompt.trim() && uploadedFiles.length === 0)}
+                    className="absolute right-3 bottom-3 p-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
             
