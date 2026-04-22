@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function DatabasePreview({ files, projectId, className = '' }: any) {
+export default function DatabasePreview({ files, projectId, className = '', isBuilding, onHealTrigger }: any) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [error, setError] = useState('');
@@ -53,6 +53,18 @@ export default function DatabasePreview({ files, projectId, className = '' }: an
 
     return () => clearTimeout(timer);
   }, [files, projectId]);
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'NOVA_RUNTIME_ERROR') {
+        if (onHealTrigger && !isBuilding) {
+           onHealTrigger(`[Automated Diagnostics]: The Database Preview encountered a runtime error.\n\nError Trace:\n${e.data.message}\n\nAgent Instruction: Conduct a structured code review of the previous output. Isolate the regression and strictly emit the corrected modules. Maintain production architectural standards.`);
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onHealTrigger, isBuilding]);
 
   return (
     <div className={`relative w-full h-full bg-white flex items-center justify-center ${className}`}>

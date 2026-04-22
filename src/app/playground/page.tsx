@@ -397,6 +397,114 @@ export default function Playground() {
     t.category.toLowerCase().includes(searchTemplate.toLowerCase())
   );
 
+  const injectedFiles = {
+    ...generatedFiles,
+    "/NovaAssets.js": `export const ASSETS = ${JSON.stringify(
+      projectAssets.reduce((acc, a) => ({ ...acc, [a.name]: a.dataUrl }), {})
+    )};`,
+    "/public/index.html": `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>`,
+    "/NovaBackend.js": `
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = "${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}";
+const SUPABASE_KEY = "${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}";
+
+const isLive = SUPABASE_URL && SUPABASE_KEY;
+export const supabase = isLive ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// AUTO-GENERATED NOVA BACKEND SDK (LIVE HYBRID MAPPING)
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+const getStore = (key) => JSON.parse(localStorage.getItem(\`nova_\${key}\`) || '[]');
+const setStore = (key, data) => localStorage.setItem(\`nova_\${key}\`, JSON.stringify(data));
+
+export const nova = {
+  db: {
+    insert: async (table, data) => { 
+      if (isLive) {
+        const { data: res, error } = await supabase.from(table).insert(data).select().single();
+        if (error) { console.error("DB Error:", error); return { success: false, error }; }
+        return { success: true, data: res };
+      }
+      await delay(300);
+      const store = getStore(table);
+      const record = { id: Math.random().toString(36).substr(2, 9), ...data, created_at: new Date().toISOString() };
+      setStore(table, [...store, record]);
+      return { success: true, data: record }; 
+    },
+    select: async (table, query) => { 
+      if (isLive) {
+        const { data: res, error } = await supabase.from(table).select(query || '*');
+        return { data: res || [], error };
+      }
+      await delay(200);
+      return { data: getStore(table) }; 
+    },
+    update: async (table, id, data) => { 
+      if (isLive) {
+        const { error } = await supabase.from(table).update(data).eq('id', id);
+        return { success: !error, error };
+      }
+      await delay(300);
+      const store = getStore(table);
+      setStore(table, store.map(row => row.id === id ? { ...row, ...data } : row));
+      return { success: true }; 
+    },
+    delete: async (table, id) => { 
+      if (isLive) {
+        const { error } = await supabase.from(table).delete().eq('id', id);
+        return { success: !error, error };
+      }
+      await delay(300);
+      setStore(table, getStore(table).filter(r => r.id !== id));
+      return { success: true }; 
+    }
+  },
+  auth: {
+    signUp: async (email, password) => { 
+      if (isLive) return supabase.auth.signUp({ email, password });
+      await delay(500); return { data: { user: { id: "u_mock", email } } }; 
+    },
+    signIn: async (email, password) => { 
+      if (isLive) return supabase.auth.signInWithPassword({ email, password });
+      await delay(500); return { data: { user: { id: "u_mock", email } } }; 
+    },
+    signOut: async () => { 
+      if (isLive) return supabase.auth.signOut();
+      await delay(200); return { error: null }; 
+    }
+  },
+  storage: {
+    upload: async (bucket, file) => { 
+      if (isLive) return supabase.storage.from(bucket).upload(file.name, file);
+      await delay(800); return { url: \`https://nova-storage.com/\${file.name}\` }; 
+    }
+  },
+  automation: {
+    triggerEmail: async (to, subject, body) => { await delay(400); console.log(\`[Nova Automation] 📨 Email sent to \${to}: \${subject}\`); return true; },
+    fireWebhook: async (url, payload) => { await delay(400); console.log(\`[Nova Automation] 🪝 Webhook fired to \${url}\`); return true; },
+  },
+  pdf: {
+    generate: async (elementId) => { await delay(600); return "blob:pdf-url"; }
+  },
+  workflow: {
+    executeStatusChange: async (recordId, newStatus) => { await delay(300); return true; }
+  }
+};
+`
+  };
+
   return (
     <div className="flex flex-col h-screen bg-black">
       {/* Playground Header */}
@@ -719,113 +827,7 @@ export default function Playground() {
                           "@supabase/supabase-js": "^2.42.0"
                         }
                       }}
-                      files={{
-                        ...generatedFiles,
-                        "/NovaAssets.js": `export const ASSETS = ${JSON.stringify(
-                          projectAssets.reduce((acc, a) => ({ ...acc, [a.name]: a.dataUrl }), {})
-                        )};`,
-                        "/public/index.html": `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nova App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-  <div id="root"></div>
-</body>
-</html>`,
-                        "/NovaBackend.js": `
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = "${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}";
-const SUPABASE_KEY = "${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}";
-
-const isLive = SUPABASE_URL && SUPABASE_KEY;
-export const supabase = isLive ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-
-// AUTO-GENERATED NOVA BACKEND SDK (LIVE HYBRID MAPPING)
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
-
-const getStore = (key) => JSON.parse(localStorage.getItem(\`nova_\${key}\`) || '[]');
-const setStore = (key, data) => localStorage.setItem(\`nova_\${key}\`, JSON.stringify(data));
-
-export const nova = {
-  db: {
-    insert: async (table, data) => { 
-      if (isLive) {
-        const { data: res, error } = await supabase.from(table).insert(data).select().single();
-        if (error) { console.error("DB Error:", error); return { success: false, error }; }
-        return { success: true, data: res };
-      }
-      await delay(300);
-      const store = getStore(table);
-      const record = { id: Math.random().toString(36).substr(2, 9), ...data, created_at: new Date().toISOString() };
-      setStore(table, [...store, record]);
-      return { success: true, data: record }; 
-    },
-    select: async (table, query) => { 
-      if (isLive) {
-        const { data: res, error } = await supabase.from(table).select(query || '*');
-        return { data: res || [], error };
-      }
-      await delay(200);
-      return { data: getStore(table) }; 
-    },
-    update: async (table, id, data) => { 
-      if (isLive) {
-        const { error } = await supabase.from(table).update(data).eq('id', id);
-        return { success: !error, error };
-      }
-      await delay(300);
-      const store = getStore(table);
-      setStore(table, store.map(row => row.id === id ? { ...row, ...data } : row));
-      return { success: true }; 
-    },
-    delete: async (table, id) => { 
-      if (isLive) {
-        const { error } = await supabase.from(table).delete().eq('id', id);
-        return { success: !error, error };
-      }
-      await delay(300);
-      setStore(table, getStore(table).filter(r => r.id !== id));
-      return { success: true }; 
-    }
-  },
-  auth: {
-    signUp: async (email, password) => { 
-      if (isLive) return supabase.auth.signUp({ email, password });
-      await delay(500); return { data: { user: { id: "u_mock", email } } }; 
-    },
-    signIn: async (email, password) => { 
-      if (isLive) return supabase.auth.signInWithPassword({ email, password });
-      await delay(500); return { data: { user: { id: "u_mock", email } } }; 
-    },
-    signOut: async () => { 
-      if (isLive) return supabase.auth.signOut();
-      await delay(200); return { error: null }; 
-    }
-  },
-  storage: {
-    upload: async (bucket, file) => { 
-      if (isLive) return supabase.storage.from(bucket).upload(file.name, file);
-      await delay(800); return { url: \`https://nova-storage.com/\${file.name}\` }; 
-    }
-  },
-  automation: {
-    triggerEmail: async (to, subject, body) => { await delay(400); console.log(\`[Nova Automation] 📨 Email sent to \${to}: \${subject}\`); return true; },
-    fireWebhook: async (url, payload) => { await delay(400); console.log(\`[Nova Automation] 🪝 Webhook fired to \${url}\`); return true; },
-  },
-  pdf: {
-    generate: async (elementId) => { await delay(600); return "blob:pdf-url"; }
-  },
-  workflow: {
-    executeStatusChange: async (recordId, newStatus) => { await delay(300); return true; }
-  }
-};
-`
-                      }}
+                      files={injectedFiles}
                     >
                       {previewEngine === 'sandpack' ? (
                         <SandpackLayout className="h-full w-full !rounded-none !border-none relative">
@@ -843,7 +845,12 @@ export const nova = {
                             <SandpackCodeEditor style={{ height: '100%' }} showLineNumbers={true} showTabs={true} />
                           </div>
                           <div className={`absolute inset-0 z-0 ${sandboxView === 'preview' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-                            <DatabasePreview files={generatedFiles} className="h-full w-full" />
+                            <DatabasePreview 
+                              files={injectedFiles} 
+                              className="h-full w-full" 
+                              isBuilding={isBuilding}
+                              onHealTrigger={(msg: string) => handlePromptSubmit(msg)}
+                            />
                           </div>
                         </div>
                       )}

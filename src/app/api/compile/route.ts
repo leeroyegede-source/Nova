@@ -124,6 +124,7 @@ export async function POST(req: Request) {
           <script>
             window.addEventListener('error', function(e) {
               document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">Runtime Error: ' + e.message + '</div>';
+              window.parent.postMessage({ type: 'NOVA_RUNTIME_ERROR', message: e.message }, '*');
             });
             
             // Intercept link clicks so the iframe doesn't navigate to 404
