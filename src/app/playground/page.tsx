@@ -814,6 +814,7 @@ export const nova = {
 };
 `
                       }}
+                    >
                       {previewEngine === 'sandpack' ? (
                         <SandpackLayout className="h-full w-full !rounded-none !border-none relative">
                           <SandpackAutoHealer isBuilding={isBuilding} onHealTrigger={(msg) => handlePromptSubmit(msg)} />
