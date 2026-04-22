@@ -799,11 +799,11 @@ export const nova = {
                     >
                       <SandpackLayout className="h-full w-full !rounded-none !border-none">
                         <SandpackAutoHealer isBuilding={isBuilding} onHealTrigger={(msg) => handlePromptSubmit(msg)} />
-                        <div style={{ display: sandboxView === 'code' ? 'block' : 'none', height: '100%', width: '100%' }}>
+                        <div style={{ display: sandboxView === 'code' ? 'flex' : 'none', flex: 1, height: '100%', width: '100%' }}>
                           <SandpackCodeEditor className="h-full w-full" showLineNumbers={true} showTabs={true} />
                         </div>
-                        <div style={{ display: sandboxView === 'preview' ? 'block' : 'none', height: '100%', width: '100%' }}>
-                          <SandpackPreview className="h-full w-full" showNavigator={false} />
+                        <div style={{ display: sandboxView === 'preview' ? 'flex' : 'none', flex: 1, height: '100%', width: '100%' }}>
+                          <SandpackPreview className="h-full w-full" showNavigator={false} showOpenInCodeSandbox={false} />
                         </div>
                       </SandpackLayout>
                     </SandpackProvider>
