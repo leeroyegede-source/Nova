@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       })
     });
     
-    let repoUrl = `https://github.com/${owner}/${repoName}`;
+    const repoUrl = `https://github.com/${owner}/${repoName}`;
     
     if (!createRes.ok && createRes.status !== 422) {
        const err = await createRes.json();

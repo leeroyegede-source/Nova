@@ -34,7 +34,7 @@ export async function POST(req: Request) {
               
               let resolvedPath = args.path;
               if (args.path.startsWith('.')) {
-                let basePath = args.importer === 'index.js' ? '' : args.importer;
+                const basePath = args.importer === 'index.js' ? '' : args.importer;
                 const parts = basePath ? basePath.split('/') : [];
                 if (parts.length > 0) parts.pop();
                 

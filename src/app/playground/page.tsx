@@ -1151,6 +1151,7 @@ Please generate the backend API route for this webhook and any necessary databas
                     projectAssets.map((asset, i) => (
                       <div key={i} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
                         <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-black/50">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={asset.dataUrl} alt={asset.name} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
