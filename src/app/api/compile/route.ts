@@ -86,9 +86,13 @@ export async function POST(req: Request) {
 
               const content = files[args.path] || files[`/${args.path}`];
               if (content) {
+                let loader: "jsx" | "css" | "ts" | "tsx" = 'jsx';
+                if (args.path.endsWith('.css')) loader = 'css';
+                else if (args.path.endsWith('.ts')) loader = 'ts';
+                else if (args.path.endsWith('.tsx')) loader = 'tsx';
                 return {
                   contents: content,
-                  loader: args.path.endsWith('.css') ? 'css' : (args.path.endsWith('.ts') ? 'ts' : 'jsx'),
+                  loader: loader,
                 };
               }
             });
