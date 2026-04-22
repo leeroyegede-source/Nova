@@ -598,25 +598,11 @@ export const nova = {
   };
 
   const handleApiKeyIntegration = () => {
-    const functionName = window.prompt("What specific function do you want this 3rd-Party API to perform? (e.g. 'Fetch live weather data', 'Send an SMS', 'Generate a PDF')");
-    if (!functionName) return;
-    
-    const apiKey = window.prompt("Enter the API Key (or leave blank to let the AI use a placeholder):") || "YOUR_API_KEY_HERE";
-    
-    handlePromptSubmit(`I need to integrate a 3rd-party API into the backend to execute this specific function: "${functionName}". 
-Please stub out a backend API route and a frontend component. Securely use the following API Key in the server-side logic: ${apiKey}. Ensure the frontend has a button to trigger this API route and display the result.`);
+    handlePromptSubmit("I want to integrate a 3rd-Party API. Please ask me what specific function I want the API to perform, and ask me to securely provide the API Key.");
   };
 
   const handleWebhookIntegration = () => {
-    const payloadSpecs = window.prompt("What data/payload will this Webhook receive? (e.g., 'Stripe payment success event with customer email and amount', 'GitHub push event data')");
-    if (!payloadSpecs) return;
-    
-    const actions = window.prompt("What should the backend do when it receives this data? (e.g., 'Update the user database', 'Send an email confirmation')");
-    
-    handlePromptSubmit(`I need to set up a secure Webhook Receiver API route. 
-The webhook will receive the following payload: "${payloadSpecs}".
-When the payload is received and validated, the backend should execute the following logic: "${actions || 'Log the data to the console'}".
-Please generate the backend API route for this webhook and any necessary database schema updates.`);
+    handlePromptSubmit("I need to set up a secure Webhook Receiver. Please ask me what payload data the webhook will receive, and what backend actions should be triggered upon receiving it.");
   };
 
   return (
@@ -671,7 +657,7 @@ Please generate the backend API route for this webhook and any necessary databas
             <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
               <Server className="w-4 h-4" /> Backend
             </button>
-            <div className="absolute right-0 top-full mt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
+            <div className="absolute right-0 top-full pt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
               <div className="bg-[#12121a] border border-white/10 rounded-xl shadow-2xl p-2 flex flex-col gap-1 backdrop-blur-xl">
                 <button onClick={() => handlePromptSubmit("Integrate an OCR Vision API to extract text and data from uploaded images.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
                   <Eye className="w-4 h-4 text-emerald-400" /> OCR Vision API
@@ -713,7 +699,7 @@ Please generate the backend API route for this webhook and any necessary databas
             <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
               <Wand2 className="w-4 h-4" /> Magic Tools
             </button>
-            <div className="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
+            <div className="absolute right-0 top-full pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
               <div className="bg-[#12121a] border border-white/10 rounded-xl shadow-2xl p-2 flex flex-col gap-1 backdrop-blur-xl">
                 <button onClick={() => handlePromptSubmit("Implement robust user authentication (Login/Signup/Signout) into the current app architecture.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
                   <Lock className="w-4 h-4 text-blue-400" /> Add Authentication
@@ -736,7 +722,7 @@ Please generate the backend API route for this webhook and any necessary databas
             <button className="flex items-center justify-center w-9 h-9 rounded-lg text-sm font-semibold transition-all bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 shadow-lg">
               <MoreVertical className="w-4 h-4" />
             </button>
-            <div className="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
+            <div className="absolute right-0 top-full pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
               <div className="bg-[#12121a] border border-white/10 rounded-xl shadow-2xl p-2 flex flex-col gap-1 backdrop-blur-xl">
                 <button onClick={handleDeployVercel} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-left text-sm font-semibold text-white transition-colors">
                   <span className="text-white text-lg leading-none">▲</span> Deploy to Vercel
