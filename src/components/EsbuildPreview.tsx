@@ -3,6 +3,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as esbuild from 'esbuild-wasm';
 
+let initPromise: Promise<void> | null = null;
+
+const ensureInitialized = async () => {
+  if (!initPromise) {
+    initPromise = esbuild.initialize({
+      worker: false,
+      wasmURL: 'https://unpkg.com/esbuild-wasm@0.20.2/esbuild.wasm'
+    }).catch((err: any) => {
+      if (err.message.includes('Cannot call "initialize" more than once') || 
+          err.message.includes('multiple times')) {
+        return; // Already initialized, safe to ignore
+      }
+      initPromise = null; // Reset so we can retry on failure
+      throw err;
+    });
+  }
+  return initPromise;
+};
+
 export default function EsbuildPreview({ files, className = '' }: any) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -61,29 +80,8 @@ export default function EsbuildPreview({ files, className = '' }: any) {
       };
 
       try {
-        let result;
-        try {
-          result = await doBuild();
-        } catch (err: any) {
-          if (err.message.includes('You need to call "initialize"') || err.message.includes('not initialized')) {
-            // Lazy initialize esbuild
-            try {
-              await esbuild.initialize({
-                worker: false,
-                wasmURL: 'https://unpkg.com/esbuild-wasm@0.20.2/esbuild.wasm'
-              });
-            } catch (initErr: any) {
-              if (!initErr.message.includes('multiple times') && !initErr.message.includes('more than once')) {
-                throw initErr;
-              }
-            }
-            // Retry build
-            result = await doBuild();
-          } else {
-            throw err;
-          }
-        }
-
+        await ensureInitialized();
+        const result = await doBuild();
         const bundledCode = result.outputFiles[0].text;
         setIsReady(true);
 
