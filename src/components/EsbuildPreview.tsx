@@ -58,6 +58,9 @@ export default function EsbuildPreview({ files, className = '' }: any) {
                     return { path: relativePath, namespace: 'virtual' };
                   }
                   
+                  if (args.path.startsWith('http://') || args.path.startsWith('https://')) {
+                    return { path: args.path, external: true };
+                  }
                   if (!args.path.startsWith('.')) {
                     return { path: `https://esm.sh/${args.path}`, external: true };
                   }
