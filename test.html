@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>body { margin: 0; padding: 0; }</style>
+          <script type="importmap">
+            {
+              "imports": {
+                "react": "https://esm.sh/react@18.2.0",
+                "react-dom": "https://esm.sh/react-dom@18.2.0",
+                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script>
+            window.addEventListener('error', function(e) {
+              document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">Runtime Error: ' + e.message + '</div>';
+            });
+          </script>
+          <script type="module">
+            // virtual:index.js
+import React2 from "react";
+import { createRoot } from "react-dom/client";
+
+// virtual:App.js
+import React, { useState } from "react";
+function App() {
+  const [c, setC] = useState(0);
+  return /* @__PURE__ */ React.createElement("div", { onClick: () => setC(c + 1) }, "Click me: ", c);
+}
+
+// virtual:index.js
+var root = createRoot(document.getElementById("root"));
+root.render(React2.createElement(App.default || App));
+          </script>
+        </body>
+      </html>

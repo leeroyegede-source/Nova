@@ -154,13 +154,11 @@ export default function Playground() {
   }, [router]);
 
   const handleClearProject = () => {
-    if (confirm("Are you sure you want to clear the current workspace? Unsaved changes will be lost.")) {
-      setGeneratedFiles({});
-      setMessages([]);
-      setShowPreview(false);
-      localStorage.removeItem('nova_saved_project_files');
-      localStorage.removeItem('nova_saved_project_messages');
-    }
+    setGeneratedFiles({});
+    setMessages([]);
+    setShowPreview(false);
+    localStorage.removeItem('nova_saved_project_files');
+    localStorage.removeItem('nova_saved_project_messages');
   };
 
   useEffect(() => { scrollToBottom() }, [messages, isBuilding]);

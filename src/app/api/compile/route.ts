@@ -103,6 +103,15 @@ export async function POST(req: Request) {
             window.addEventListener('error', function(e) {
               document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">Runtime Error: ' + e.message + '</div>';
             });
+            
+            // Intercept link clicks so the iframe doesn't navigate to 404
+            document.addEventListener('click', function(e) {
+              var a = e.target.closest('a');
+              if (a && a.href) {
+                e.preventDefault();
+                console.log('Navigation intercepted in preview mode:', a.href);
+              }
+            });
           </script>
           <script type="module">
             ${bundledCode}
