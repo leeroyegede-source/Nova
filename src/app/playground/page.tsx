@@ -1174,7 +1174,29 @@ export const nova = {
                             <SandpackCodeEditor style={{ height: '100%' }} showLineNumbers={true} showTabs={true} />
                           </div>
                           <div className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${sandboxView === 'preview' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
-                            <SandpackPreview style={{ height: '100%' }} showNavigator={false} />
+                            {targetPlatform === 'web' ? (
+                              <SandpackPreview style={{ height: '100%' }} showNavigator={false} />
+                            ) : (
+                              <div className="h-full w-full flex flex-col items-center justify-center bg-[#09090b] text-gray-400 p-8 text-center relative z-20 overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('https://transparenttextures.com/patterns/cubes.png')] opacity-5" />
+                                <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20 relative z-10 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
+                                  {targetPlatform === 'mobile' ? <Smartphone className="w-10 h-10 text-blue-400" /> : <Server className="w-10 h-10 text-blue-400" />}
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-3 relative z-10">{targetPlatform === 'mobile' ? 'Mobile App Ready' : 'PHP Server Ready'}</h3>
+                                <p className="text-sm max-w-md mx-auto mb-8 relative z-10 leading-relaxed">
+                                  Live in-browser rendering is currently supported for standard <strong className="text-white">Web (React)</strong> projects. 
+                                  Your {targetPlatform === 'mobile' ? 'React Native mobile' : 'PHP application'} code has been successfully synthesized and compiled in the background!
+                                </p>
+                                <div className="flex gap-4 relative z-10">
+                                  <button onClick={() => setSandboxView('code')} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-500 font-semibold shadow-lg transition-colors">
+                                    View Source Code
+                                  </button>
+                                  <button onClick={handleDownload} className="px-5 py-2.5 border border-white/20 text-white rounded-xl hover:bg-white/10 font-semibold transition-colors">
+                                    Download Project
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </SandpackLayout>
                       ) : (
