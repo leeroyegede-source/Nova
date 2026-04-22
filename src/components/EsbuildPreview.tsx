@@ -3,29 +3,37 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as esbuild from 'esbuild-wasm';
 
-export default function EsbuildPreview({ files, className = '' }) {
-  const iframeRef = useRef(null);
+let isInitialized = false;
+let initPromise: Promise<void> | null = null;
+
+export default function EsbuildPreview({ files, className = '' }: any) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState('');
 
   // 1. Initialize esbuild
   useEffect(() => {
-    const init = async () => {
-      try {
-        await esbuild.initialize({
-          worker: true,
-          wasmURL: 'https://unpkg.com/esbuild-wasm@0.20.2/esbuild.wasm'
-        });
-        setIsReady(true);
-      } catch (err) {
-        if (err.message.includes('Cannot initialize esbuild multiple times')) {
-          setIsReady(true);
+    if (isInitialized) {
+      setIsReady(true);
+      return;
+    }
+
+    if (!initPromise) {
+      initPromise = esbuild.initialize({
+        worker: true,
+        wasmURL: 'https://unpkg.com/esbuild-wasm@0.20.2/esbuild.wasm'
+      }).then(() => {
+        isInitialized = true;
+      }).catch((err) => {
+        if (err.message.includes('Cannot call "initialize" more than once') || err.message.includes('multiple times')) {
+          isInitialized = true;
         } else {
           console.error("Esbuild initialization error:", err);
         }
-      }
-    };
-    init();
+      });
+    }
+
+    initPromise.then(() => setIsReady(true));
   }, []);
 
   // 2. Compile code when files change
