@@ -6,7 +6,7 @@ import {
   Terminal, Monitor, Smartphone, Code2, Database, 
   Play, Search, Send, Sparkles, LayoutTemplate,
   Loader2, CheckCircle2, ChevronRight, Download, Zap, Paperclip, X, Save, FolderOpen, Trash2, Image as ImageIcon, Settings, Upload,
-  Wand2, Lock, CreditCard, Moon, MoreVertical
+  Wand2, Lock, CreditCard, Moon, MoreVertical, Server, Eye, Mail, Network, Plug
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -644,6 +644,29 @@ export const nova = {
         {/* Right Actions */}
         <div className="flex items-center gap-3">
           
+          {/* Backend Tools Dropdown */}
+          <div className="relative group">
+            <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+              <Server className="w-4 h-4" /> Backend
+            </button>
+            <div className="absolute right-0 top-full mt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
+              <div className="bg-[#12121a] border border-white/10 rounded-xl shadow-2xl p-2 flex flex-col gap-1 backdrop-blur-xl">
+                <button onClick={() => handlePromptSubmit("Integrate an OCR Vision API to extract text and data from uploaded images.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Eye className="w-4 h-4 text-emerald-400" /> OCR Vision API
+                </button>
+                <button onClick={() => handlePromptSubmit("Set up a backend Email SMTP tool for sending transactional emails (like welcome or reset password emails).")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Mail className="w-4 h-4 text-blue-400" /> Email SMTP Tool
+                </button>
+                <button onClick={() => handlePromptSubmit("Create an API Gateway caller to reliably proxy and route external API requests securely.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Network className="w-4 h-4 text-purple-400" /> API Gateway Caller
+                </button>
+                <button onClick={() => handlePromptSubmit("Build a 3rd-Party App Integrator module to connect to external webhooks and OAuth providers.")} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-left text-sm text-gray-200 transition-colors">
+                  <Plug className="w-4 h-4 text-yellow-400" /> 3rd-Party Integrator
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Magic Tools Dropdown */}
           <div className="relative group">
             <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
