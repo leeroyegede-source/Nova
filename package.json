@@ -17,7 +17,9 @@
     "clsx": "^2.1.1",
     "esbuild": "^0.28.0",
     "esbuild-wasm": "^0.28.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^12.38.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",
     "openai": "^6.34.0",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
