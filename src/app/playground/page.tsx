@@ -87,7 +87,14 @@ export default function Playground() {
 
       // Add all generated files to the ZIP
       for (const [path, content] of Object.entries(generatedFiles)) {
-        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+        let cleanPath = path.startsWith('/') ? path.substring(1) : path;
+        if (!cleanPath.includes('/')) {
+          if (cleanPath.endsWith('.html')) {
+            cleanPath = `public/${cleanPath}`;
+          } else if (cleanPath.endsWith('.js') || cleanPath.endsWith('.jsx') || cleanPath.endsWith('.ts') || cleanPath.endsWith('.tsx') || cleanPath.endsWith('.css')) {
+            cleanPath = `src/${cleanPath}`;
+          }
+        }
         zip.file(cleanPath, content);
       }
 
@@ -376,7 +383,14 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
       const zip = new JSZip();
 
       for (const [path, content] of Object.entries(filesToZip)) {
-        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+        let cleanPath = path.startsWith('/') ? path.substring(1) : path;
+        if (!cleanPath.includes('/')) {
+          if (cleanPath.endsWith('.html')) {
+            cleanPath = `public/${cleanPath}`;
+          } else if (cleanPath.endsWith('.js') || cleanPath.endsWith('.jsx') || cleanPath.endsWith('.ts') || cleanPath.endsWith('.tsx') || cleanPath.endsWith('.css')) {
+            cleanPath = `src/${cleanPath}`;
+          }
+        }
         zip.file(cleanPath, content);
       }
 
