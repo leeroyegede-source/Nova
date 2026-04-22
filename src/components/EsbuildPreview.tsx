@@ -9,7 +9,7 @@ const ensureInitialized = async () => {
   if (!initPromise) {
     initPromise = esbuild.initialize({
       worker: false,
-      wasmURL: 'https://unpkg.com/esbuild-wasm@0.20.2/esbuild.wasm'
+      wasmURL: 'https://unpkg.com/esbuild-wasm@0.28.0/esbuild.wasm'
     }).catch((err: any) => {
       if (err.message.includes('Cannot call "initialize" more than once') || 
           err.message.includes('multiple times')) {
