@@ -771,7 +771,8 @@ export const nova = {
         </div>
         
         {/* Center Tabs */}
-        <div className="flex overflow-x-auto md:overflow-visible bg-white/5 border border-white/10 rounded-lg p-1 space-x-1 hide-scrollbar">
+        <div className="flex items-center gap-4">
+          <div className="flex overflow-x-auto md:overflow-visible bg-white/5 border border-white/10 rounded-lg p-1 space-x-1 hide-scrollbar">
             <button 
               onClick={() => { setActiveTab('preview'); setSandboxView('preview'); }}
               className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${activeTab === 'preview' && sandboxView === 'preview' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
@@ -796,6 +797,37 @@ export const nova = {
             >
               <div className="flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Assets</div>
             </button>
+          </div>
+
+          {activeTab === 'preview' && (
+            <div className="hidden xl:flex items-center gap-2">
+              <div className="h-6 w-px bg-white/10 mx-1"></div>
+              
+              <div className="flex bg-white/5 border border-white/10 rounded-lg p-1">
+                <button 
+                  onClick={() => setPreviewEngine('sandpack')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${previewEngine === 'sandpack' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >Sandpack</button>
+                <button 
+                  onClick={() => setPreviewEngine('database')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${previewEngine === 'database' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >Supabase DB</button>
+              </div>
+              
+              <div className="flex bg-white/5 border border-white/10 rounded-lg p-1">
+                <button 
+                  onClick={() => setDeviceView('desktop')}
+                  className={`p-1.5 rounded-md transition-colors ${deviceView === 'desktop' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                  title="Desktop View"
+                ><Monitor className="w-4 h-4" /></button>
+                <button 
+                  onClick={() => setDeviceView('mobile')}
+                  className={`p-1.5 rounded-md transition-colors ${deviceView === 'mobile' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                  title="Mobile View"
+                ><Smartphone className="w-4 h-4" /></button>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Right Actions */}
