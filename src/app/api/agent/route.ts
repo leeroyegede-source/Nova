@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 import { MASTER_BUILDER_PROMPT } from '@/lib/agent-prompt';
 
-export const maxDuration = 60; // Allow sufficient LLM processing time
+export const maxDuration = 300; // Allow sufficient LLM processing time for massive output tokens
 
 export async function POST(req: Request) {
   try {
@@ -84,7 +84,7 @@ Modify this code to satisfy their new requests. ONLY output the \`<nova-file>\` 
             console.log("Routing Agent Request through Claude 3.5 Engine...");
             const anthropic = new Anthropic({ 
               apiKey: process.env.CLAUDE_API_KEY,
-              defaultHeaders: { 'anthropic-beta': 'max-tokens-3-5-sonnet-2024-07-15' }
+              defaultHeaders: { 'anthropic-beta': 'output-300k-2026-03-24' }
             });
             let stream;
             
@@ -120,7 +120,7 @@ Modify this code to satisfy their new requests. ONLY output the \`<nova-file>\` 
               try {
                 stream = await anthropic.messages.create({
                   model: modelString,
-                  max_tokens: 8192,
+                  max_tokens: 128000,
                   system: systemContext,
                   messages: anthropicMessages,
                   stream: true
