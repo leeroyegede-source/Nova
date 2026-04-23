@@ -88,16 +88,23 @@ export default function Playground() {
       if (e.data?.type === 'NOVA_ELEMENT_CLICKED' && isEditorMode) {
         setEditorElement(e.data);
       }
+      if (e.data?.type === 'REQUEST_EDITOR_MODE') {
+        if (e.source) {
+          (e.source as Window).postMessage({ type: 'SET_EDITOR_MODE', enabled: isEditorMode }, '*');
+        }
+      }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [isEditorMode]);
 
   useEffect(() => {
-    const iframe = document.querySelector('.sp-frame') as HTMLIFrameElement;
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'SET_EDITOR_MODE', enabled: isEditorMode }, '*');
-    }
+    const iframes = document.querySelectorAll('.sp-frame');
+    iframes.forEach(iframe => {
+      if ((iframe as HTMLIFrameElement).contentWindow) {
+        (iframe as HTMLIFrameElement).contentWindow!.postMessage({ type: 'SET_EDITOR_MODE', enabled: isEditorMode }, '*');
+      }
+    });
   }, [isEditorMode]);
 
   const scrollToBottom = () => {
@@ -675,10 +682,14 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
   </style>
   <script>
     let editorMode = false;
+    
+    // Request state instantly on load
+    window.parent.postMessage({ type: 'REQUEST_EDITOR_MODE' }, '*');
+
     window.addEventListener('message', (e) => {
       if (e.data?.type === 'SET_EDITOR_MODE') {
         editorMode = e.data.enabled;
-        if(editorMode) console.log("Nova Visual Editor Enabled");
+        console.log("Nova Visual Editor State:", editorMode);
       }
     });
     window.addEventListener('mouseover', (e) => {
