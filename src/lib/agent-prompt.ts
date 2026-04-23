@@ -47,3 +47,6 @@ You will reply exclusively with valid Nova Workspace Configuration JSON formatte
   ]
 }
 DO NOT output conversational text. Output purely the build JSON.`;
+
+
+// IMAGE RULE: For images, NEVER use generic random placeholders. You MUST use 'https://loremflickr.com/1200/800/{highly-specific-keywords}' where keywords match exactly what the image should be (e.g. 'coffee,shop,interior').

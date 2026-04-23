@@ -77,8 +77,28 @@ export default function Playground() {
   const [generatedFiles, setGeneratedFiles] = useState<Record<string, string>>({});
   const [generatedSchema, setGeneratedSchema] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [isEditorMode, setIsEditorMode] = useState(false);
+  const [editorElement, setEditorElement] = useState<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'NOVA_ELEMENT_CLICKED' && isEditorMode) {
+        setEditorElement(e.data);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [isEditorMode]);
+
+  useEffect(() => {
+    const iframe = document.querySelector('.sp-frame') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'SET_EDITOR_MODE', enabled: isEditorMode }, '*');
+    }
+  }, [isEditorMode]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -650,6 +670,43 @@ If you are uploading this to a traditional cPanel or Shared Hosting environment,
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nova App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .nova-editor-hover { outline: 3px solid #ec4899 !important; outline-offset: -3px !important; cursor: crosshair !important; opacity: 0.8; }
+  </style>
+  <script>
+    let editorMode = false;
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'SET_EDITOR_MODE') {
+        editorMode = e.data.enabled;
+        if(editorMode) console.log("Nova Visual Editor Enabled");
+      }
+    });
+    window.addEventListener('mouseover', (e) => {
+      if (editorMode && e.target && e.target.classList && e.target.tagName !== 'HTML' && e.target.tagName !== 'BODY') {
+        e.target.classList.add('nova-editor-hover');
+      }
+    }, true);
+    window.addEventListener('mouseout', (e) => {
+      if (editorMode && e.target && e.target.classList) {
+        e.target.classList.remove('nova-editor-hover');
+      }
+    }, true);
+    window.addEventListener('click', (e) => {
+      if (editorMode && e.target) {
+        e.preventDefault();
+        e.stopPropagation();
+        const el = e.target;
+        el.classList.remove('nova-editor-hover');
+        window.parent.postMessage({
+          type: 'NOVA_ELEMENT_CLICKED',
+          tagName: el.tagName,
+          className: el.className,
+          text: el.innerText || el.textContent,
+          src: el.src
+        }, '*');
+      }
+    }, true);
+  </script>
 </head>
 <body>
   <div id="root"></div>
@@ -801,6 +858,7 @@ export const nova = {
 
           {activeTab === 'preview' && (
             <div className="hidden xl:flex items-center gap-2">
+              <button onClick={() => setIsEditorMode(!isEditorMode)} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors flex items-center gap-1 ${isEditorMode ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10'}`} title="Visual Editor Mode"><Wand2 className="w-3.5 h-3.5" /> Editor Mode</button>
               <div className="h-6 w-px bg-white/10 mx-1"></div>
               
               <div className="flex bg-white/5 border border-white/10 rounded-lg p-1">
